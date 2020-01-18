@@ -1,11 +1,11 @@
 module.exports = {
   siteMetadata: {
-    title: `Gatsby Starter Blog`,
-    author: `Kyle Mathews`,
-    description: `A starter blog demonstrating what Gatsby can do.`,
-    siteUrl: `https://gatsby-starter-blog-demo.netlify.com/`,
+    title: `Vedran Budimcic`,
+    author: `Vedran Budimcic`,
+    description: `Personal site`,
+    siteUrl: `https://vedranb.com`,
     social: {
-      twitter: `kylemathews`,
+      twitter: `vbudimcic`,
     },
   },
   plugins: [
@@ -24,26 +24,27 @@ module.exports = {
       },
     },
     {
-      resolve: `gatsby-transformer-remark`,
-      options: {
-        plugins: [
-          {
-            resolve: `gatsby-remark-images`,
-            options: {
-              maxWidth: 590,
-            },
-          },
-          {
-            resolve: `gatsby-remark-responsive-iframe`,
-            options: {
-              wrapperStyle: `margin-bottom: 1.0725rem`,
-            },
-          },
-          `gatsby-remark-prismjs`,
-          `gatsby-remark-copy-linked-files`,
-          `gatsby-remark-smartypants`,
-        ],
-      },
+        resolve: `gatsby-plugin-mdx`,
+        options: {
+            extensions: [".mdx", ".md"],
+            gatsbyRemarkPlugins: [
+                {
+                    resolve: `gatsby-remark-images`,
+                    options: {
+                        maxWidth: 590,
+                    },
+                },
+                {
+                    resolve: `gatsby-remark-responsive-iframe`,
+                    options: {
+                        wrapperStyle: `margin-bottom: 1.0725rem`,
+                    },
+                },
+                `gatsby-remark-prismjs`,
+                `gatsby-remark-copy-linked-files`,
+                `gatsby-remark-smartypants`,
+            ],
+        },
     },
     `gatsby-transformer-sharp`,
     `gatsby-plugin-sharp`,
@@ -53,7 +54,7 @@ module.exports = {
         //trackingId: `ADD YOUR TRACKING ID HERE`,
       },
     },
-    `gatsby-plugin-feed`,
+    `gatsby-plugin-feed-mdx`,
     {
       resolve: `gatsby-plugin-manifest`,
       options: {
