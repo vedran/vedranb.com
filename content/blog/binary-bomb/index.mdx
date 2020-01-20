@@ -1,0 +1,332 @@
+---
+title: Defusing the binary bomb
+date: "2012-04-04T05:52:00.000Z"
+description: "Walkthrough for the popular CS assignmment"
+---
+I recently discovered a popular reverse engineering assignment in many university CS programs called the <a href="http://www.cs.cmu.edu/afs/cs/academic/class/15213-s02/www/applications/labs/lab2/bomblab.html">Binary Bomb</a>. I didn't have it at my school, but it looked like a fun project so I decided to try it.
+
+The binary bomb is a simple command line program that asks you to enter a particular secret string. If type the incorrect string, the program explodes by printing out *BOOM!!!* and terminating. If you enter the correct string, the program proceeds to the next phase, which expects another particular string. In a typical univeristy setup, each explosion will automatically notify your professor and deduct a small percentage from your final assignment grade.
+
+The goal is to reverse engineer the executable in order to find the expected string for each phase and prevent the bomb from blowing up.
+
+I completed the project over a few days, and have written a detailed walkthrough below.
+
+If you'd like to play along at home, the original executable is up on the <a href="http://web.archive.org/web/20130412102116/csapp.cs.cmu.edu/public/1e/bomb.tar">Internet Archive</a>. Make sure you are running the executable on a 64-bit Linux box or VM.
+
+## Phase 1
+
+![Binary Bomb Intro](images/4936222536cb264c7b57eede89f7521b99b6a6db802e6bed9d63421d6ae02e4b.png)
+
+I fired up [gdb](https://www.gnu.org/software/gdb/), added some breakpoints before and after the first input string required for the bomb. Then I stepped through the disassembled instructions to find a function called `phase_1`.
+
+![Binary Bomb Phase 1](images/a0f9bc02e29b1be46701a082b112578beca98e40f5ec6ae4335039d2927b2f03.png)
+
+Note that between the beginning and end of `phase_1` there is a call to the function `strings_not_equal`. 
+
+So we have two options here to beat phase 1:
+
+ 1. Change the `je` (jump if equal instruction) to be a `jne` (jump if not equal), which will skip over `explode_bomb` to take us to the next phase. This method is easy to do, but it doesn't actually give us the pass code for the first phase. So we would have to do this jump every time.
+
+ 1. Dive into the `strings_not_equal` call and explore the code. There will likely be a string comparison in there that will reveal the string for this phase. In this way we can simply type in the string to beat phase 1 and go into phase 2 in the expected way.
+
+Let's disassemble `strings_not_equal`:
+
+![Binary Bomb](images/fe4ad19d6275dec85df8ded4f9b4c9351030af5dd00ddd2d15dba12c63e8704f.png)
+
+Notice that there are two calls to a function called `string_length`, followed by a jump depending on the the result of these function calls. Furthermore, notice that the registers `esi` and `edi` are pushed onto the stack before their respective `string_length` calls. This tells us that these registers are used as function arguments.
+
+These instructions tell us that the function first compares the length of the input string before even checking if the user's input matches the password.
+
+Let's examine the argument passed to the first `string_length` call:
+
+![Binary Bomb](images/44aed4dd6b440231e4049a3d9cb3ac0b7ee4ad0c6fb76a71a60ba7172e3eeb69.png)
+
+
+Note that we are looking for the value of the register `esi`, which is stored at `0x804b680`. Let's examine it as a string:
+
+![Binary Bomb](images/5ecd027bb28e6b0abcb49213add04be0ce898898e99c166e1ba59bfccf20768b.png)
+
+In this case, `esi` points to `123` which is what I typed in for my attempt for this phase.
+
+Now let's take a look at `edi` which is the register used in the second `string_length` call, we will see what the program is comparing our input string against, which should be the password to phase 1.
+
+![Binary Bomb](images/d9b263070307ba292cc2d147e8d516c316f41ab3a9ef86b2cf846056c32b50c2.png)
+
+Let's run the binary bomb and try it out:
+
+![Binary Bomb](images/eed0b7f17c342c5575a5d75ce75b4324c83da0add86a2eb406c4e4faa799bf05.png)
+
+Phaes 1 complete!
+
+
+## Phase 2
+
+We can start by disassembling the `phase_2` function just like we did for `phase_1`:
+
+![Binary Bomb](images/d7c450200e0afd7c3762fabdb1987142b42169270a6bf3545a579c45af525edb.png)
+
+
+While the `read_six_numbers` function hints that this round will be looking for 6 numbers of input, it doesn't really tell us anything about the values of these numbers. Notice the two `explode_bomb` calls in `phase_2`. Let's add some breakpoints throughout the function and enter `012345` as our input.
+
+The first `explode_bomb` call is after a comparison between the constant `0x1` and the value at address `(%ebp - 0x18)`. Examining the memory location reveals that the value is `0`. After some trial and error I discovered that this is the first number of my attempted password `012345`. We can prove this by examining the values in memory of offsets other than `0x18`.
+
+
+![Binary Bomb](images/a20846304f8dc6dd2c9f183b2a1ce2d6b5465f2d39b0502f4ee8639671e23596.png)
+
+Now we know `(%ebp - 0x18)` corresponds to the first element of our input. If we want to avoid the first `explode_bomb` call, then the first `cmpl` (comparison instruction) must consider the values at the two addresses to be equal. This means the first digit of this password must be `1`.
+
+Now if we restart the bomb and use this new knowledge, we can bypass the first comparison and make it to the second one.
+
+![Binary Bomb](images/4fbc9a4d786d5c781612a06440fff44e2678bca7a16fcc6702103a123eaa7786.png)
+
+
+The second comparison is slightly more complicated and depends on the result of a (signed) multiplication. First we multiply `(%esi - 0x4 + 4*%ebx)` by `%eax`, and then store the result in `%eax`. In our case it gives us the following:
+
+![Binary Bomb](images/88f644fa4c683b9b65e7fa748f2ccae8730ceb10ceef3376c70220723ca36dcc.png)
+
+
+Now we meet the second comparison statement. The right hand side is simply an index to the current element of our input. This iteration it's comparing the value in `%eax` to the second input value. If this comparison is not-equal, then the bomb will explode. Since the value of `eax` is 2, this means that the second digit of our input should be `2`.
+
+
+This time instead of re-running the program, we can just set the value directly in memory.
+
+
+![Binary Bomb](images/d56605d51a8406cdfe67dc3e51a01040588e791c3b1562b56a61f1a2805e65da.png)
+
+
+Now we reach the third round of the `phase_2` loop. Let's take a look at `%eax` again to see the expected digit. 
+
+![Binary Bomb](images/6ffadc254c0f98c75857d672c10f10c03a35093ae6bcd7bd787b1cc13afd557b.png)
+
+Doing this one more iteration reveals that the program expects the first 4 digits of the 6 digit password to have values `1 2 6 24`. These are not arbitrary numbers. The pattern looks like increasing [factorial digits](https://en.wikipedia.org/wiki/Factorial). Notice that `1 2 6 24` is `1! 2! 3! 4!`
+
+Based on the function name, we can make the guess that the required password is just 6 numbers, and each one is the factorial of its 1-based index. This would be `1! 2! 3! 4! 5! 6!` or `1 2 6 24 120 720`
+
+![Binary Bomb](images/4d39745b6dbb09397893c6b48b1d313c8677cb12ce2af19d78a53a4c9ec44e7b.png)
+
+Success! 
+
+## Phase 3
+
+I restarted the program in gdb, set a breakpoint at the `phase_3` function, and entered the passwords we've found so far for phase 1 and 2. Then I entered an initial guess for phase 3 of `try one try`.
+
+![Binary Bomb](images/108130f5e5aeb66ae017e6a93dcd04bc09ce2166dea17e86deccf54a94bba1c7.png)
+
+
+Looking at the first dozen lines of the disassembled `phase_3` function, note the call to [sscanf](https://www.tutorialspoint.com/c_standard_library/c_function_sscanf.htm). If we examine the arguments passed to this function, then we can figure out the input format of the password.
+
+
+![Binary Bomb](images/2c43783cfb67d3d7daa775b857bfe70410027e5179d2872a6f4d92809efe2247.png)
+
+
+Notice that our input string and a format string was passed into `sscanf`. The format string is in the format `%d %c %d`, so it expects an integer, a character, and another integer.
+
+
+![Binary Bomb](images/2f654a13ab939fb9baf6175c2db2380d13105a0fdc05accf05f03e821ef65deb.png)
+
+
+Since I entered ``ry one try` as my initial guess, this does not fit the format that this call to `sscanf` expects. This will cause `sscanf` to return and set `%eax` to 0
+
+
+![Binary Bomb](images/b39b2054a915ca5761fdaf3e12e8c9f41afa4136467c86f9c09f741aa8ef35c3.png)
+
+This would result in the comparison of `%eax` and `0x2` NOT taking the corresponding jump, and cause the bomb to explode. 
+
+So now I restarted the application with a better guess. Now that jump after the `%eax` comparison will succeed, we run into another conditional check. Examining the value in memory at `(%ebp - 0xc)` shows that the program is comparing the first number of our input to the value 7, and jumping (to avoid an explosion) if the number is less than or equal to 7. Since our input number was 1, this condition is true and we skip this call to `explode_bomb`. So far so good.
+
+
+![Binary Bomb](images/76034f6a91b91de794fcf56007658dedfa6fcb8e4f86ce3d9fb33ba048db5216.png)
+
+
+The next line of interest is a `jmp` statement which will jump to the offset of the value stored at `(0x80497e8 + %eax*4)`.
+
+
+![Binary Bomb](images/50c77b9eec7b27438732c9e4af66db7c7c4bb7d9fc9db2aca78be6539025dbf4.png)
+
+
+At this point `%eax` is set to the first number in our input string, so our jump takes us to the following position:
+
+
+![Binary Bomb](images/c4aa251f8cc111abdf2ab3e933761707b248caaeb12517b86d0023b63df65e72.png)
+
+
+The next comparison examines our third input value (an integer) stored at `(%ebp - 0x4)` and checks it against the value `0xd6`, or `214` in decimal.
+
+
+![Binary Bomb](images/925a952c1d7fe326b2d85fab939852593ac7a00d7f25c88d89798f47b97063bd.png)
+
+
+In order to beat this comparison, we can restart the app again with the following input:
+
+
+![Binary Bomb](images/508bc6dfa446dcb08744c694ae49257dae8b1bebfce509a4a03e6f27e9dbc313.png)
+
+
+Then, the final comparison checks our second input value (of type char) against `%bl`. Examining the value of `%bl` reveals that the application is expecting a `b` character for this situation
+
+
+![Binary Bomb](images/d76c915abfca1169cdd44ee8f333e753bdfffe9eed6bfbee3e5a34b73be325b7.png)
+
+
+So we run the application one final time including everything we've learned about the `phase_3` function, and we have now successfully completed phase 3!
+
+
+![Binary Bomb](images/b4c7139b5ca715b067c5eef67feeee9ec8a5ed9c04ae3f150a300c88747dc1a7.png)
+
+
+## Phase 4
+
+Lets disassemble the `phase_4` function next. Once again there is a call to sscanf, so let's peek at the format string to see what kind of input this phase expects.
+
+![Binary Bomb](images/326631555752be428dcf1d40a26317e80b8058e343ab852ebe46ac73893c5e7c.png)
+
+Notice that in the second highlighted segment our input value is passed into the function `func4`, and the result of this function is compared against `0x37` (`55` in decimal).
+
+Now let's look at func4 in chunks in order to simplify it. First looking at **section A**, if the input value (located at `[%ebp + 0x8]` and then copied into `%ebx`) is less than or equal to `1`, then the function jumps down to **section B** and sets `%eax` to `1`, which will become the return value.
+
+![Binary Bomb](images/44dd650fab5d0cf5d7666175549b911ee00d8f71819db03643d3156f869a7b2a.png)
+
+Otherwise, the function steps into **section C** which will call `func4` recursively, passing in the original input decremented by **one**. This is followed by another call to `func4`, passing in the original input decremented by **two**. Then the result of these two function calls is summed and copied into `%eax` to become the return value of the function.
+
+After stepping through a few iterations, I realized that the function was defined as `func4(x) = func4(x-1) + func4(x-2)`, which looks like the [Fibonnaci sequence](https://en.wikipedia.org/wiki/Fibonacci_number) of the input number. 
+
+However, notice that `func4` will return `1` if the input is `0`, whereas `Fib(0)` = `0`. Therefore if we have an input of `x = 2`, `func4` would return `1` for both the `x - 1 = 1` and `x - 2 = 0` calls.
+
+Remember that the `phase_4` function succeeds if the output of `func4` was `0x37` (`55` in decimal). Since the `Fib(10) = 55` and we know that `func4(0) = func(1) = 1`, `func4(2) = 2`, then we just need to find an input x such that `Fib(x + 1) = 55`. Since `Fib(10) = Fib(9 + 1) = 55`, we know that the solution for this phase is 9.
+
+![Binary Bomb](images/6552d61c400a7b8a86c594ea5d97d295dd1b833ccac7f5a8977a18cac801ad5a.png)
+
+## Phase 5
+
+Let's look at the first chunk of the disassembled `phase_5` function:
+
+![Binary Bomb](images/e2c138350845ef25a2455d8aa4fbbf05cfa63dc0a0bfa85ce549c0fce66213bd.png)
+
+Notice the call to the `string_length` function, and the resulting jump away from `explode_bomb` if the return value is `6`. Now we know that our input string must contain exactly 6 characters.
+
+Looking down to the location of the jump, we have the following block of code that forms a loop. In this test run I've entered `123456` as my input. 
+
+![Binary Bomb](images/437477642b6f5f96a91dcbce1afddd6119311033ac4a6f605b6ae72ea276831f.png)
+
+Notice that my input string is stored at `%ebx`.
+
+![Binary Bomb](images/7ca03a73e0741cf8db3a26b250d9a1feb7babb52df30141f22d1f4b8bba60af8.png)
+
+In the loop above, the code takes our input value `%ebx` plus some offset `%edx` and copies it into `%al`. Then it performs a binary `AND` operation between `0xf` and `%al`, and stores the result in `%al` and subsequently into `%eax`. Finally, it copies the character at `[%esi + %eax]` into `%al`, and into an initially empty string stored at `[%ecx + %edx]`.
+
+To start, let's look at what is being stored at `%esi`:
+
+![Binary Bomb](images/d036a609c9be2927c61ba2c39e4acbb915df139c5847769ea8e771cf14edff5f.png)
+
+So there seems to be an array of characters stored at `%esi`. Each character from our input string is binary `AND`ed with `0xf`. Then this resulting value is used as a lookup index in `%esi` to find the final character mapping. 
+
+![Binary Bomb](images/dd89899e324f27e9b0f4e87d8f0fc11218ef13af315fe515e36f61b1842e1726.png)
+
+Now that we understand how the function works, we can examine the jump that avoids the final `explode_bomb` call. This code checks to see if the result of the logic above is equal to the string stored at `0x804980b`
+
+
+![Binary Bomb](images/27003d2d8dfc51b87a316fdc9991c5ad17a02d4a4fc8db2ee9022427e7484000.png)
+
+
+Now we know that the transformed version of our input string must equal `giants`. All we need to do is reverse engineer an input string that ends up as `giants` in the algorithm. 
+
+Taking another look at the substitution array stored at `%esi`:
+
+
+![Binary Bomb](images/d036a609c9be2927c61ba2c39e4acbb915df139c5847769ea8e771cf14edff5f.png)
+
+
+Notice that 'g' has an index of 15. Therefore we must find a character that when `AND`ed with `0xf` will result in `15` decimal which is also `0xf` hex. This type of operation is called a [bitwise mask](https://stackoverflow.com/a/10493604/12353703). To succeed here, we need to find a character that has `1111` as the least significant 4 bits. The 4 most significant bits don't matter here. For example, the hex ASCII value for the letter `o` is `6F`, which has a binary value of `0110 1111`, so it fits our requirement.
+
+We can continue in a similar fashion and find characters which match for remaining "iants". My solution was the string `opekmq`, but there are many solutions for this phase.
+
+
+![Binary Bomb](images/32e2e627323e24a39692567084f96133076fc4ba62cae7e33196813566ab9d1e.png)
+
+
+## Phase 6
+
+![Binary Bomb](https://66.media.tumblr.com/8ba287f6f07a0e3595fcaa667cb14b94/f70102d6a23ea11d-49/s540x810/789175db54e102970a828e2fe9536022afb63f1d.png)
+
+Notice the function call on the last line of the excerpt above reads six numbers from standard input, so now we know the first requirement of the password for this phase. I'll enter the input `1 2 3 4 5 6` to satisfy the 6 digit requirement.
+
+Next let's look a little further down the function:
+
+![Binary Bomb](https://66.media.tumblr.com/563013a9be7d3e39720c5475a6861a6a/f70102d6a23ea11d-a8/s540x810/0378f11e0b3858f7809c801b03147a95ef78e64a.png)
+
+And after the jump:
+
+![Binary Bomb](https://66.media.tumblr.com/b3d77c9a41daf294c5d735b8734402e7/f70102d6a23ea11d-cb/s540x810/c33518ed7afda3d2dc92e0d27e3010b2f000bc29.png)
+
+Notice that in the above block of code we have a loop. The counter for the loop is `%edi`, which is initially set to `0` using the `XOR` trick above, and the loop continues until `%edi` has reached a value of 6. Since `%ebp - 0x18` is the location of the first input, this block of code is just iterating through all of the input values. 
+
+![Binary Bomb](https://66.media.tumblr.com/acbc8e39d55dc49dc7c55620c4fa8d1d/f70102d6a23ea11d-49/s540x810/fc0bd2b3265419528975b7d23dee61f7e5c21a8f.png)
+
+While iterating through all numbers, the function ensures that each number is less than `5`. Notice that this comparison uses the `jbe` command, which does not test for the sign of the number. Keeping this in mind, this process can be summarized as the second requirement: Each of the six numbers must be between 1 and 6 inclusive.
+
+Next, let's examine the nested loop below:
+
+![Binary Bomb](images/27838fa2043e930a81481fb4f1fe7a4cc55869a95fa94d014563e5e62df56e1e.png)
+
+The loop has iterators `%ebx` and `%edi`. We're comparing each number against every other number, and only jumping over the `explode_bomb` call if the numbers are not equal. Essentially this code is ensuring that the password consists of unique numbers 1-6.
+
+The next restriction is the most complicated. Let's go down near the final explode_bomb call:
+
+![Binary Bomb](images/058cb051de66fd4c3edca1d8f73600c37b9b3950e3049292ebaf43b3e10b9bca.png)
+
+This part seems complicated initially. Ignore the early `lea` instruction since it's a [`NOP` to ensure code alignment](https://stackoverflow.com/questions/2553517/what-is-register-eiz). Skipping over that, I've highlighted the relevant loop above in red. After an initial `%esi` is set, the code is comparing the value at `%esi`, with the value at `%esi + 0x8`, and the bomb explodes if the value at `%esi + 0x8` is less than the value at %esi.
+
+But what are `%esi` and `%esi + 0x8`?
+
+![Binary Bomb](images/766eaf1d30b10f50fb76682fd9b21350e654324b93f3757c5e3480f4f429d0e4.png)
+
+%esi points to a node data structure. Now since debugging information is not available for this application, we can't find the definition of a node, but looking at what is given above, we can gain some intuition about it. Let's start by looking at what %esi + 0x8 leads to:
+
+![Binary Bomb](images/7cc9afad64ef5cfbf9776d6c09bc56d7a037d8e8529e97a68ecf9b409889f629.png)
+
+Notice that each of these nodes contain at least three things. Firstly some numerical value, then the input value corresponding to the node number (from the original "1 2 3 4 5 6" input), and finally a pointer to the next node. This phase uses the common linked list data structure.
+Some trial and error of input reveals two things. The first and second values in the above screenshot are identical for any order of input. Node1 will always have a first value of 0xfd and a second value of 0x1, node2 of 0x2d5 and 0x2, and so on. The only thing that changes is the pointer to the next node, which depends on the order of input values. For example, an input of "6 5 4 3 2 1" will result in node6 -&gt; node5 -&gt; node4 -&gt; node3, etc. 
+So now to beat this phase let's take a closer look at conditions surrounding the explode_bomb call.
+
+![Binary Bomb](images/56c097677c858f36cc9f3a6268c5560173ac29d61bbb7303e398721c39641c65.png)
+
+At this point %edx contains the pointer to the next node, and %eax contains the value of the current node's first column number. Let's call this first column number X. So this code compares if the current node's X value is greater than the next node's X value, and skips the explode_bomb call if this is the case.
+So we have the following nodes and associated X values:
+
+![Binary Bomb](images/030ec5ad77156c172b147707a32e157f0cda9edad043e297c46e836afba97ba0.png)
+
+Since we are iterating over all nodes, and a node's next pointer is related to the order of input, we just need to find the correct arrangement of numbers such that the current node's X is always greater than its next node's X value. More generally, we need to sort the numbers in decreasing order with respect to their X value.
+
+![Binary Bomb](images/edae8f8da093d16ca6f5260d899c5fb7530fe1bd11bf3f0cd07000681063bfa1.png)
+
+Now the nodes are sorted in order of decreasing X value. At this point we have satisfied all requirements of the password for this phase!
+
+![Binary Bomb](images/b14845ee016a927b2811c9a6e3cb3c25202bb002d7ef1ccccbf32f45c5e3ed6d.png)
+
+So now we've solved the bomb! Congratulations!
+Except there's a rumor that there is a secret phase in the bomb, and next step will be to find and solve that one.
+<a href="http://www.vedranb.com/post/20455275313/secret-phase">Secret phase here!</a>
+
+## Secret Phase
+
+Begin from <a href="http://www.vedranb.com/post/19285223085/no-disassemble">here</a>. 
+So here we are, the final phase. But first we have to figure out the way to the entrance of this secret phase.
+If we poke around main, we'll notice that each time the correct password for a phase has been entered, the bomb calls a "phase_defused" method.
+Taking a look at the disassembled phase_defused, we note something interesting:
+![Binary Bomb](images/38b5812a4f35af1722b1553e9fee7c372ce2ac30f61a8b709a9a1d4ab4a9fad9.png)
+ There's our entrance to the secret phase! Now as usual there are two ways to get in. Either we alter the jump instructions and force the execution of the function call, or we take the time to figure out the true nature of the phase_defused function in order to enter the secret phase legitimately. This is analogous to deciding whether to bash down a door, or pick the lock.
+Since we're not strapped for time, and we don't know the complexity of the secret_phase function (aka what we may screw up by skipping important jumps), we'd better go with approach 2, and determine the path of entrance analytically.
+To do this we'll begin by looking at the sscanf call at the top of the code shown above. Let's examine the format string and input:
+![Binary Bomb](images/fa3f5244df764decf7a0956d347e9a9eb7ae6caceb9d130eb057f429a2ffaf76.png)
+So the input to this sscanf call is the string "9 ", which happens to be the correct password for phase 4. However this sscanf call is looking for 2 inputs in order to avoid the jump which skips the call to secret_phase. So we need to add a string of characters after our password for phase 4. But what should this string be?
+Well let's take a look at the inputs to the strings_not_equal call a little further down to get an idea of the string we need.
+![Binary Bomb](images/8a3402c6c27669705e6494b98de5f2b447e23b464779fe6143821d64303b03d9.png)
+So here we have the key to get into the secret phase, the string "austinpowers". Now we restart the app with a break point on the secret_phase function call, and the following input:
+![Binary Bomb](images/7cd2e40411cbd287118ae2a5ae53325362bdaedbcee9487dd09bb98da6748557.png)
+Originally I thought that the secret phase was ridiculously easy, but this turned out to be a lucky choice of initial input.
+The secret phase works by taking in a string input, converting it to an integer, and then comparing it to some hardcoded value. If these values match the it proceeds to run the  function fun7. If fun7 returns a value of 7, then the bomb is defused.
+![Binary Bomb](images/f00b390f68e78a4542ef06fd6f85d464eb4635bcdc6387423b166e44e429714f.png)
+The inputted value is moved from %eax to %ebx, then subtracted by one, and placed back into %eax. Finally we have the comparison against 0x3e8, which is 1000 in decimal. So to pass this comparison we must enter a number that is less than or equal to 1001. Fun7 is relatively complicated, and bounces around a few data structures, so I won't cover its functionality at this time. 
+Before even diving into fun7, I simply entered 1001 as my first input guess, which turned out to be the correct answer! Provided I have some free time I'll examine fun7 in detail to determine why 1001 is the correct input.
+Be that as it may, this bomb has now been defused, and the world is safe once more.
+![Binary Bomb](images/5bc652e95b7fd97b8f02a1878d941d13b1a08f490828b52d1090211a81f68a7c.png)
