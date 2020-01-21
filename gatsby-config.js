@@ -43,9 +43,16 @@ module.exports = {
               wrapperStyle: `margin-bottom: 1.0725rem`,
             },
           },
-          `gatsby-remark-prismjs`,
           `gatsby-remark-copy-linked-files`,
           `gatsby-remark-smartypants`,
+          {
+            resolve: `gatsby-remark-autolink-headers`,
+            options: {
+              removeAccents: true,
+              isIconAfterHeader: true,
+            },
+          },
+          `gatsby-remark-prismjs`,
         ],
       },
     },
@@ -86,7 +93,8 @@ module.exports = {
       resolve: `gatsby-remark-images`,
       options: {
         linkImagesToOriginal: false,
-      }
-    }
+      },
+    },
+    `gatsby-plugin-sass`,
   ],
 }

@@ -1,17 +1,28 @@
 ---
 title: Defusing the binary bomb
 date: "2012-04-04T05:52:00.000Z"
-description: "Walkthrough for the popular CS assignmment"
+description: "Walkthrough for the popular CS undergrad assignment"
 ---
+
 I recently discovered a popular reverse engineering assignment in many university CS programs called the <a href="http://www.cs.cmu.edu/afs/cs/academic/class/15213-s02/www/applications/labs/lab2/bomblab.html">Binary Bomb</a>. I didn't have it at my school, but it looked like a fun project so I decided to try it.
 
 The binary bomb is a simple command line program that asks you to enter a particular secret string. If type the incorrect string, the program explodes by printing out *BOOM!!!* and terminating. If you enter the correct string, the program proceeds to the next phase, which expects another particular string. In a typical univeristy setup, each explosion will automatically notify your professor and deduct a small percentage from your final assignment grade.
 
-The goal is to reverse engineer the executable in order to find the expected string for each phase and prevent the bomb from blowing up.
+The goal is to use a debugger to reverse engineer the executable in order to find the expected string for each phase and prevent the bomb from blowing up.
 
 I completed the project over a few days, and have written a detailed walkthrough below.
 
 If you'd like to play along at home, the original executable is up on the <a href="http://web.archive.org/web/20130412102116/csapp.cs.cmu.edu/public/1e/bomb.tar">Internet Archive</a>. Make sure you are running the executable on a 64-bit Linux box or VM.
+
+## Table of Contents
+
+[Phase 1](#phase-1) <br/>
+[Phase 2](#phase-2) <br/>
+[Phase 3](#phase-3) <br/>
+[Phase 4](#phase-4) <br/>
+[Phase 5](#phase-5) <br/>
+[Phase 6](#phase-6) <br/>
+[Secret Phase](#secret-phase) <br/>
 
 ## Phase 1
 
@@ -192,7 +203,7 @@ After stepping through a few iterations, I realized that the function was define
 
 However, notice that `func4` will return `1` if the input is `0`, whereas `Fib(0)` = `0`. Therefore if we have an input of `x = 2`, `func4` would return `1` for both the `x - 1 = 1` and `x - 2 = 0` calls.
 
-Remember that the `phase_4` function succeeds if the output of `func4` was `0x37` (`55` in decimal). Since the `Fib(10) = 55` and we know that `func4(0) = func(1) = 1`, `func4(2) = 2`, then we just need to find an input x such that `Fib(x + 1) = 55`. Since `Fib(10) = Fib(9 + 1) = 55`, we know that the solution for this phase is 9.
+Remember that the `phase_4` function succeeds if the output of `func4` was `0x37` (`55` in decimal). Since the `Fib(10) = 55` and we know that `func4(0) = func(1) = 1`, `func4(2) = 2`, then we just need to find an input x such that `Fib(x + 1) = 55`. Since `Fib(10) = Fib(9 + 1) = 55`, we know that the solution for this phase is `9`.
 
 ![Binary Bomb](images/6552d61c400a7b8a86c594ea5d97d295dd1b833ccac7f5a8977a18cac801ad5a.png)
 
@@ -240,11 +251,12 @@ Notice that 'g' has an index of 15. Therefore we must find a character that when
 
 We can continue in a similar fashion and find characters which match for remaining "iants". My solution was the string `opekmq`, but there are many solutions for this phase.
 
-
 ![Binary Bomb](images/32e2e627323e24a39692567084f96133076fc4ba62cae7e33196813566ab9d1e.png)
 
 
 ## Phase 6
+
+Disassembling `phase_6`:
 
 ![Binary Bomb](https://66.media.tumblr.com/8ba287f6f07a0e3595fcaa667cb14b94/f70102d6a23ea11d-49/s540x810/789175db54e102970a828e2fe9536022afb63f1d.png)
 
@@ -270,7 +282,7 @@ Next, let's examine the nested loop below:
 
 The loop has iterators `%ebx` and `%edi`. We're comparing each number against every other number, and only jumping over the `explode_bomb` call if the numbers are not equal. Essentially this code is ensuring that the password consists of unique numbers 1-6.
 
-The next restriction is the most complicated. Let's go down near the final explode_bomb call:
+The next restriction is the most complicated. Let's go down near the final `explode_bomb` call:
 
 ![Binary Bomb](images/058cb051de66fd4c3edca1d8f73600c37b9b3950e3049292ebaf43b3e10b9bca.png)
 
@@ -280,53 +292,78 @@ But what are `%esi` and `%esi + 0x8`?
 
 ![Binary Bomb](images/766eaf1d30b10f50fb76682fd9b21350e654324b93f3757c5e3480f4f429d0e4.png)
 
-%esi points to a node data structure. Now since debugging information is not available for this application, we can't find the definition of a node, but looking at what is given above, we can gain some intuition about it. Let's start by looking at what %esi + 0x8 leads to:
+`%esi` points to a node data structure. Since debugging information is not included in this executable, we can't find the definition of a node. But looking at what is given above we can gain some intuition about it. Let's start by looking at what `%esi + 0x8` leads to:
 
 ![Binary Bomb](images/7cc9afad64ef5cfbf9776d6c09bc56d7a037d8e8529e97a68ecf9b409889f629.png)
 
-Notice that each of these nodes contain at least three things. Firstly some numerical value, then the input value corresponding to the node number (from the original "1 2 3 4 5 6" input), and finally a pointer to the next node. This phase uses the common linked list data structure.
-Some trial and error of input reveals two things. The first and second values in the above screenshot are identical for any order of input. Node1 will always have a first value of 0xfd and a second value of 0x1, node2 of 0x2d5 and 0x2, and so on. The only thing that changes is the pointer to the next node, which depends on the order of input values. For example, an input of "6 5 4 3 2 1" will result in node6 -&gt; node5 -&gt; node4 -&gt; node3, etc. 
-So now to beat this phase let's take a closer look at conditions surrounding the explode_bomb call.
+Notice that each of these nodes contain at least three things:
+
+1. Firstly some numerical value
+1. The input value corresponding to the node number (from the original `1 2 3 4 5 6` input)
+1. A pointer to the next node.
+
+This phase uses the common linked list data structure.
+
+Some trial and error of input reveals two things. The first and second values in the above screenshot are identical for any order of input. So `node1` will always have a first value of `0xfd` and a second value of `0x1`, `node2` of `0x2d5` and `0x2`, and so on. The only thing that changes is the pointer to the next node, which depends on the order of input values. For example, an input of `6 5 4 3 2 1` will result in `node6 -> node5 -> node4 -> node3 -> node2 -> node1`.
+
+So now to beat this phase let's take a closer look at conditions surrounding the `explode_bomb` call.
 
 ![Binary Bomb](images/56c097677c858f36cc9f3a6268c5560173ac29d61bbb7303e398721c39641c65.png)
 
-At this point %edx contains the pointer to the next node, and %eax contains the value of the current node's first column number. Let's call this first column number X. So this code compares if the current node's X value is greater than the next node's X value, and skips the explode_bomb call if this is the case.
-So we have the following nodes and associated X values:
+At this point `%edx` contains the pointer to the next node, and `%eax` contains the value of the current node's first column number. Let's call this first column number `X`. So this code compares if the current node's `X` value is greater than the next node's `X` value, and skips the `explode_bomb` call if this is the case.
+
+So we have the following nodes and associated `X` values:
 
 ![Binary Bomb](images/030ec5ad77156c172b147707a32e157f0cda9edad043e297c46e836afba97ba0.png)
 
-Since we are iterating over all nodes, and a node's next pointer is related to the order of input, we just need to find the correct arrangement of numbers such that the current node's X is always greater than its next node's X value. More generally, we need to sort the numbers in decreasing order with respect to their X value.
+Since we are iterating over all nodes, and a node's next pointer is related to the order of input, we just need to find the correct arrangement of numbers such that the current node's `X` is always greater than its next node's `X` value. More generally, we need to sort the numbers in decreasing order with respect to their `X` values.
 
 ![Binary Bomb](images/edae8f8da093d16ca6f5260d899c5fb7530fe1bd11bf3f0cd07000681063bfa1.png)
 
-Now the nodes are sorted in order of decreasing X value. At this point we have satisfied all requirements of the password for this phase!
+Now the nodes are sorted in order of decreasing `X` value. We can use the node indices as the password for this phase
 
 ![Binary Bomb](images/b14845ee016a927b2811c9a6e3cb3c25202bb002d7ef1ccccbf32f45c5e3ed6d.png)
 
-So now we've solved the bomb! Congratulations!
-Except there's a rumor that there is a secret phase in the bomb, and next step will be to find and solve that one.
-<a href="http://www.vedranb.com/post/20455275313/secret-phase">Secret phase here!</a>
 
 ## Secret Phase
 
-Begin from <a href="http://www.vedranb.com/post/19285223085/no-disassemble">here</a>. 
-So here we are, the final phase. But first we have to figure out the way to the entrance of this secret phase.
-If we poke around main, we'll notice that each time the correct password for a phase has been entered, the bomb calls a "phase_defused" method.
-Taking a look at the disassembled phase_defused, we note something interesting:
+Although the bomb seems to be defused, poking around the disassembled `main()` reveals a function called `secret_phase()`.
+
 ![Binary Bomb](images/38b5812a4f35af1722b1553e9fee7c372ce2ac30f61a8b709a9a1d4ab4a9fad9.png)
- There's our entrance to the secret phase! Now as usual there are two ways to get in. Either we alter the jump instructions and force the execution of the function call, or we take the time to figure out the true nature of the phase_defused function in order to enter the secret phase legitimately. This is analogous to deciding whether to bash down a door, or pick the lock.
-Since we're not strapped for time, and we don't know the complexity of the secret_phase function (aka what we may screw up by skipping important jumps), we'd better go with approach 2, and determine the path of entrance analytically.
-To do this we'll begin by looking at the sscanf call at the top of the code shown above. Let's examine the format string and input:
+
+Like before, there are two ways to jump to this function call.
+
+1. Alter a `jmp` instruction to go directly to the call to `secret_phase()`. This is simple but is risky since we don't know if `secret_phase()` relies on any other logic in order to run successfully, that we would skip by jumping directly to it.
+1. Take the time to figure out the true nature of the `phase_defused` function in order to enter the secret phase legitimately. 
+
+The analogy here is deciding whether to bash down a door and risk destroying anything behind it, or picking the lock and entering safely.
+
+Once again, let's go with the second option.
+
+We'll begin by looking at the `sscanf` call at the top of the code shown above. Let's examine the format string and input:
+
 ![Binary Bomb](images/fa3f5244df764decf7a0956d347e9a9eb7ae6caceb9d130eb057f429a2ffaf76.png)
-So the input to this sscanf call is the string "9 ", which happens to be the correct password for phase 4. However this sscanf call is looking for 2 inputs in order to avoid the jump which skips the call to secret_phase. So we need to add a string of characters after our password for phase 4. But what should this string be?
-Well let's take a look at the inputs to the strings_not_equal call a little further down to get an idea of the string we need.
+
+The first input to this `sscanf` call is the string `9`, which we know is is the correct password for phase 4. The second part of the format string expects a string input. But what should this string be?
+
+Let's take a look at the inputs to the `strings_not_equal` call a little further down to get an idea of the string we need.
+
 ![Binary Bomb](images/8a3402c6c27669705e6494b98de5f2b447e23b464779fe6143821d64303b03d9.png)
-So here we have the key to get into the secret phase, the string "austinpowers". Now we restart the app with a break point on the secret_phase function call, and the following input:
+
+Now we know that to get into the secret phase, we need to add `austinpowers` to the end of the password for phase 4.
+
 ![Binary Bomb](images/7cd2e40411cbd287118ae2a5ae53325362bdaedbcee9487dd09bb98da6748557.png)
-Originally I thought that the secret phase was ridiculously easy, but this turned out to be a lucky choice of initial input.
-The secret phase works by taking in a string input, converting it to an integer, and then comparing it to some hardcoded value. If these values match the it proceeds to run the  function fun7. If fun7 returns a value of 7, then the bomb is defused.
+
+The secret phase takes a string input, converts it to an integer and checks that this integer is less than or equal to `0x3e9`. If this is true, then it calls `fun7` and expects the return value to be `7`.
+
 ![Binary Bomb](images/f00b390f68e78a4542ef06fd6f85d464eb4635bcdc6387423b166e44e429714f.png)
-The inputted value is moved from %eax to %ebx, then subtracted by one, and placed back into %eax. Finally we have the comparison against 0x3e8, which is 1000 in decimal. So to pass this comparison we must enter a number that is less than or equal to 1001. Fun7 is relatively complicated, and bounces around a few data structures, so I won't cover its functionality at this time. 
-Before even diving into fun7, I simply entered 1001 as my first input guess, which turned out to be the correct answer! Provided I have some free time I'll examine fun7 in detail to determine why 1001 is the correct input.
+
+Since `0x3e9` is `1001` decimal, I entered `1001` as my first guess for the secret phase password. Amazingly, this was the correct answer to the secret phase. At this point it was getting late and I didn't spend the time to understand how `fun7` works.
+
 Be that as it may, this bomb has now been defused, and the world is safe once more.
+
 ![Binary Bomb](images/5bc652e95b7fd97b8f02a1878d941d13b1a08f490828b52d1090211a81f68a7c.png)
+
+If you are interested in the details of how `fun7` works, I found a [great write up](https://github.com/jeanlucaslima/binary-bomb/blob/master/secret_phase.txt) by someone with more patience than me.
+
+Thanks for reading along!

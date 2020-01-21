@@ -11,6 +11,8 @@ const Layout = ({ location, title, children }) => {
         author
         social {
           twitter
+          github
+          email
         }
       }
     }
