@@ -6,7 +6,7 @@ description: "Walkthrough for the popular CS undergrad assignment"
 
 I recently discovered a popular reverse engineering assignment in many university CS programs called the <a href="http://www.cs.cmu.edu/afs/cs/academic/class/15213-s02/www/applications/labs/lab2/bomblab.html">Binary Bomb</a>. I didn't have it at my school, but it looked like a fun project so I decided to try it.
 
-The binary bomb is a simple command line program that asks you to enter a particular secret string. If type the incorrect string, the program explodes by printing out *BOOM!!!* and terminating. If you enter the correct string, the program proceeds to the next phase, which expects another particular string. In a typical univeristy setup, each explosion will automatically notify your professor and deduct a small percentage from your final assignment grade.
+The binary bomb is a simple command line program that asks you to enter a particular secret string. If type the incorrect string, the program explodes by printing out *BOOM!!!* and terminating. If you enter the correct string, the program proceeds to the next phase, which expects another particular string. In a typical classroom setup, each explosion will automatically notify your professor and deduct a small percentage from your final assignment grade.
 
 The goal is to use a debugger to reverse engineer the executable in order to find the expected string for each phase and prevent the bomb from blowing up.
 
@@ -258,21 +258,21 @@ We can continue in a similar fashion and find characters which match for remaini
 
 Disassembling `phase_6`:
 
-![Binary Bomb](https://66.media.tumblr.com/8ba287f6f07a0e3595fcaa667cb14b94/f70102d6a23ea11d-49/s540x810/789175db54e102970a828e2fe9536022afb63f1d.png)
+![Binary Bomb](images/789175db54e102970a828e2fe9536022afb63f1d.png)
 
 Notice the function call on the last line of the excerpt above reads six numbers from standard input, so now we know the first requirement of the password for this phase. I'll enter the input `1 2 3 4 5 6` to satisfy the 6 digit requirement.
 
 Next let's look a little further down the function:
 
-![Binary Bomb](https://66.media.tumblr.com/563013a9be7d3e39720c5475a6861a6a/f70102d6a23ea11d-a8/s540x810/0378f11e0b3858f7809c801b03147a95ef78e64a.png)
+![Binary Bomb](images/0378f11e0b3858f7809c801b03147a95ef78e64a.png)
 
 And after the jump:
 
-![Binary Bomb](https://66.media.tumblr.com/b3d77c9a41daf294c5d735b8734402e7/f70102d6a23ea11d-cb/s540x810/c33518ed7afda3d2dc92e0d27e3010b2f000bc29.png)
+![Binary Bomb](images/c33518ed7afda3d2dc92e0d27e3010b2f000bc29.png)
 
 Notice that in the above block of code we have a loop. The counter for the loop is `%edi`, which is initially set to `0` using the `XOR` trick above, and the loop continues until `%edi` has reached a value of 6. Since `%ebp - 0x18` is the location of the first input, this block of code is just iterating through all of the input values. 
 
-![Binary Bomb](https://66.media.tumblr.com/acbc8e39d55dc49dc7c55620c4fa8d1d/f70102d6a23ea11d-49/s540x810/fc0bd2b3265419528975b7d23dee61f7e5c21a8f.png)
+![Binary Bomb](images/fc0bd2b3265419528975b7d23dee61f7e5c21a8f.png)
 
 While iterating through all numbers, the function ensures that each number is less than `5`. Notice that this comparison uses the `jbe` command, which does not test for the sign of the number. Keeping this in mind, this process can be summarized as the second requirement: Each of the six numbers must be between 1 and 6 inclusive.
 
