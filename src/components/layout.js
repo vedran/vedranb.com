@@ -35,6 +35,8 @@ const Layout = ({ location, title, children }) => {
       <header><Header isRootPage={isRootPage} /></header>
       <main>{children}</main>
       <footer style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <a href="/blog/past-projects">projects</a>
+        <div style={{ display: 'inline-block', width: 20, textAlign: 'center' }}>•</div>
         <a href={`https://twitter.com/${social.twitter}`}>twitter</a>
         <div style={{ display: 'inline-block', width: 20, textAlign: 'center' }}>•</div>
         <a href={`https://twitter.com/${social.github}`}>github</a>
