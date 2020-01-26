@@ -1,5 +1,5 @@
 a.anchor {
-  display: none;
+  visibility: hidden;
   text-decoration: none;
   box-shadow: none;
   margin-left: 0.5rem;
@@ -8,7 +8,7 @@ a.anchor {
 h1, h2, h3, h4, h5, h6 {
   &:hover {
     a.anchor  {
-      display: inline;
+      visibility: visible;
     }
   }
 }
