@@ -61,14 +61,14 @@ module.exports = {
     {
       resolve: `gatsby-plugin-google-analytics`,
       options: {
-        //trackingId: `ADD YOUR TRACKING ID HERE`,
+        trackingId: `UA-28210494-1`,
       },
     },
     `gatsby-plugin-feed-mdx`,
     {
       resolve: `gatsby-plugin-manifest`,
       options: {
-        name: `Gatsby Starter Blog`,
+        name: `Vedran Budimcic`,
         short_name: `GatsbyJS`,
         start_url: `/`,
         background_color: `#ffffff`,
