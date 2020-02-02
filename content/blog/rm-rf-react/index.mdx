@@ -5,23 +5,23 @@ description: "Dan deleted the React codebase!"
 ---
 
 Although I'm a daily React user, I've never done a deep dive into how React works under the hood.
-I rely on the 20% that I know about React to leverage 80% of the benefits when it comes to building software.
+I rely on the 20% knowledge I have to leverage 80% of the benefits for building web apps.
 
-After taking Kent C. Dodds' course on [Frontend Masters](https://frontendmasters.com/courses/advanced-react-patterns/),
-I've had the urge do a deep dive into the guts of React to really internalize how it works.
+After taking [Kent C. Dodds](https://kentcdodds.com/)' course on [Frontend Masters](https://frontendmasters.com/courses/advanced-react-patterns/),
+I've had the urge do a deep dive into the guts of React to really internalize how it works. I'm also a lifelong generalist and have never taken the time to deeply learn a topic just for the sake of learning.
 
-To this end, I'm going to build a simple version of React from scratch. Let's pretend that Dan _did_ delete the codebase!
+To this end, I'm going to build a simple version of React from scratch. Let's pretend that [Dan](https://overreacted.io/) _did_ delete the codebase!
 
 I'll rely on my own shallow understanding of the React API, as well as some API documentation if I get stuck.
 After each notable feature, I'll compare and contrast my work with the true React implementation.
 
 Many others have done similar projects, but for learning purposes I'm going to avoid reading their posts and see how far I can get.
 
-Thanks to the magic of thesaurus.com, I'm going to call my version of the library `recoil`.
+By the powers of thesaurus.com, this project will be called `recoil`.
 
 ## Goals
 
-The goal is for `recoil` to support at least:
+The goal for `recoil` is to support at least:
 
 - Generating HTML from functions (aka Components)
 - HTML elements (e.g. div, span, etc)
@@ -33,8 +33,7 @@ The goal is for `recoil` to support at least:
 - Context API
 - JSX through its own webpack plugin
 
-Since I'll write about each feature as I build them, I'm sure I'll make some bad decisions early on
-that will need to be redesigned and rewritten when I realize there is incompatibility with a later feature. I will also start with simpler constraints than what React actually does, and iterate my way to approximate React.
+I'll write about each feature as I build them. That means that I'll make some decisions early on that I won't realize are terrible ideas until they later feature from being built.
 
 With that said, let's get started with the basics.
 
@@ -42,7 +41,7 @@ With that said, let's get started with the basics.
 
 My understanding of the component rendering process is that React turns functions and objects (aka Components) into HTML elements, and inserts them using the browser's API.
 
-Let's start with a function that creates regular html elements (div, span, etc). Remember that we're trying to generate HTML tht looks something like this:
+Let's start with a function that can create regular html elements (div, span, etc). Our function should be able to take in components and return HTML that looks something like this:
 
 ```html
 <div>
@@ -82,9 +81,7 @@ function createElement(elementType, props, render) {
 }
 ```
 
-Now we just need to figure out how `render()` will work. Remember that the JSX `<div>` and `<span>` elements are just syntactic sugar calls to `createElement()`. So that means any children would have already been processed into their own HTML strings from their own `render()` calls.
-
-Regular HTML elements have simple rendering methods. They just create some opening and closing tags, and render their children between them. At this point the children have already been converted to strings.
+Now we just need to figure out how `render()` will work. I believe that the JSX `<div>` and `<span>` tags are just syntactic sugar for calling `createElement()`. So that means any children of a component would have already called `createElement` and turned into HTML strings .
 
 ```javascript
 function createElement(elementType, props, render) {
@@ -96,13 +93,7 @@ function createElement(elementType, props, render) {
   // Call render, which we expect to return an array of 0 or more children.
   // By now, each child is just a string of HTML, since that's what createElement returns.
   // All we need to do is join the resulting strings together to build up the entire app.
-  html += render(props).reduce((curHtml, result) => {
-    if (typeof result === "string") {
-      return curHtml + result
-    } else {
-      throw Error("Unknown component type")
-    }
-  }, "")
+  html += render(props).join("")
 
   // Create the closing tag
   // NOTE: We're assuming all elements have both opening and closing tags.
@@ -113,7 +104,7 @@ function createElement(elementType, props, render) {
 }
 ```
 
-We can create a helper render method for HTML components, which just ensures the resulting strings are always in an array, even for the case of a single child.
+Regular HTML elements have very simple `render` methods. They just create some opening and closing tags, and render their children between those tags. Since we are already taking care of the tags in `createElement`, we just need to make sure that `render` returns an array that we call `join()` on.
 
 ```javascript
 function renderHtmlComponent({ children }) {
@@ -139,31 +130,13 @@ var demoApp = createElement(
 Finally, we need to create a `<div>` in `index.html` for recoil to insert the result of the rendering.
 
 ```javascript
-var demoApp = createElement(
-  "div",
-  {
-    children: [
-      createElement("span", { children: "Hello" }, renderHtmlComponent),
-      createElement("span", { children: "World" }, renderHtmlComponent),
-    ],
-  },
-  renderHtmlComponent
-)
-
 document.getElementById("recoil-root").innerHTML = demoApp
 ```
 
-Inspecting the DOM in Chrome reveals that we have created the HTML we expect!
+After putting it all together, we've successfully created these simple elements and put them inside of `recoil-root`:
 
-```html
-<div id="recoil-root">
-  <div>
-    <span>Hello</span>
-    <span>World</span>
-  </div>
-</div>
-```
+![recoil](images/recoil-1.png)
 
-Now we're still miles away from React. But at least we are starting to explore the concepts of rendering and component children.
+Although we're still light years away from React, we've at least explored the basics of turning functions into DOM elements.
 
-The next post will include support for both HTML and non HTML components and add support for props.
+Next up will be exploring support for both HTML and non HTML components, as well as adding props.
