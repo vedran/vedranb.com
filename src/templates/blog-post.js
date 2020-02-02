@@ -1,8 +1,8 @@
 import React from "react"
 import { Link, graphql } from "gatsby"
 import { MDXRenderer } from "gatsby-plugin-mdx"
-import { ThemeProvider } from 'theme-ui'
-import theme from './theme'
+import { ThemeProvider } from "theme-ui"
+import theme from "./theme"
 
 import Layout from "../components/layout"
 import SEO from "../components/seo"
@@ -14,11 +14,15 @@ class BlogPostTemplate extends React.Component {
     const siteTitle = this.props.data.site.siteMetadata.title
     const { previous, next } = this.props.pageContext
 
+    console.log(this.props.location)
+
     return (
       <Layout location={this.props.location} title={siteTitle}>
         <SEO
+          location={this.props.location}
           title={post.frontmatter.title}
           description={post.frontmatter.description || post.excerpt}
+          featuredImage={post.frontmatter.featuredImage || null}
         />
         <article>
           <header>
@@ -95,6 +99,7 @@ export const pageQuery = graphql`
         title
         date(formatString: "MMMM DD, YYYY")
         description
+        featuredImage
       }
     }
   }
