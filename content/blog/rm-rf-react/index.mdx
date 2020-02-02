@@ -1,0 +1,169 @@
+---
+title: rm -rf react
+date: 2020-01-30
+description: "Dan deleted the React codebase!"
+---
+
+Although I'm a daily React user, I've never done a deep dive into how React works under the hood.
+I rely on the 20% that I know about React to leverage 80% of the benefits when it comes to building software.
+
+After taking Kent C. Dodds' course on [Frontend Masters](https://frontendmasters.com/courses/advanced-react-patterns/),
+I've had the urge do a deep dive into the guts of React to really internalize how it works.
+
+To this end, I'm going to build a simple version of React from scratch. Let's pretend that Dan _did_ delete the codebase!
+
+I'll rely on my own shallow understanding of the React API, as well as some API documentation if I get stuck.
+After each notable feature, I'll compare and contrast my work with the true React implementation.
+
+Many others have done similar projects, but for learning purposes I'm going to avoid reading their posts and see how far I can get.
+
+Thanks to the magic of thesaurus.com, I'm going to call my version of the library `recoil`.
+
+## Goals
+
+The goal is for `recoil` to support at least:
+
+- Generating HTML from functions (aka Components)
+- HTML elements (e.g. div, span, etc)
+- Passing props to custom components and HTML elements
+- Internal component state w/hooks
+- Re-rendering on change state
+- One-way data binding
+- Reconciliation
+- Context API
+- JSX through its own webpack plugin
+
+Since I'll write about each feature as I build them, I'm sure I'll make some bad decisions early on
+that will need to be redesigned and rewritten when I realize there is incompatibility with a later feature. I will also start with simpler constraints than what React actually does, and iterate my way to approximate React.
+
+With that said, let's get started with the basics.
+
+## Rendering components
+
+My understanding of the component rendering process is that React turns functions and objects (aka Components) into HTML elements, and inserts them using the browser's API.
+
+Let's start with a function that creates regular html elements (div, span, etc). Remember that we're trying to generate HTML tht looks something like this:
+
+```html
+<div>
+  <span>
+    Hello
+  </span>
+  <span>
+    World
+  </span>
+</div>
+```
+
+Let's call that function `createElement`. It will need an API that looks something like this:
+
+```javascript
+function createElement(elementType, props, render) {
+  ...
+}
+```
+
+We can start filling in this method. Regardless of the props provided or how render works, we will need to create the opening and closing tags for the element.
+
+```javascript
+function createElement(elementType, props, render) {
+  let html = ""
+
+  // Create the opening tag
+  html += `<${elementType}>`
+
+  // TODO: Handle rendering by iterating over the results of each child's render call
+  html += render()
+
+  // Create the closing tag
+  // NOTE: We're assuming all elements have both opening and closing tags.
+  // This isn't always the case
+  html += `</${elementType}>`
+}
+```
+
+Now we just need to figure out how `render()` will work. Remember that the JSX `<div>` and `<span>` elements are just syntactic sugar calls to `createElement()`. So that means any children would have already been processed into their own HTML strings from their own `render()` calls.
+
+Regular HTML elements have simple rendering methods. They just create some opening and closing tags, and render their children between them. At this point the children have already been converted to strings.
+
+```javascript
+function createElement(elementType, props, render) {
+  let html = ""
+
+  // Create the opening tag
+  html += `<${elementType}>`
+
+  // Call render, which we expect to return an array of 0 or more children.
+  // By now, each child is just a string of HTML, since that's what createElement returns.
+  // All we need to do is join the resulting strings together to build up the entire app.
+  html += render(props).reduce((curHtml, result) => {
+    if (typeof result === "string") {
+      return curHtml + result
+    } else {
+      throw Error("Unknown component type")
+    }
+  }, "")
+
+  // Create the closing tag
+  // NOTE: We're assuming all elements have both opening and closing tags.
+  // This isn't always the case
+  html += `</${elementType}>`
+
+  return html
+}
+```
+
+We can create a helper render method for HTML components, which just ensures the resulting strings are always in an array, even for the case of a single child.
+
+```javascript
+function renderHtmlComponent({ children }) {
+  return Array.isArray(children) ? children : [children]
+}
+```
+
+Then we can re-create the sample HTML above as a set of `createElement` calls.
+
+```javascript
+var demoApp = createElement(
+  "div",
+  {
+    children: [
+      createElement("span", { children: "Hello" }, renderHtmlComponent),
+      createElement("span", { children: "World" }, renderHtmlComponent),
+    ],
+  },
+  renderHtmlComponent
+)
+```
+
+Finally, we need to create a `<div>` in `index.html` for recoil to insert the result of the rendering.
+
+```javascript
+var demoApp = createElement(
+  "div",
+  {
+    children: [
+      createElement("span", { children: "Hello" }, renderHtmlComponent),
+      createElement("span", { children: "World" }, renderHtmlComponent),
+    ],
+  },
+  renderHtmlComponent
+)
+
+document.getElementById("recoil-root").innerHTML = demoApp
+```
+
+Inspecting the DOM in Chrome reveals that we have created the HTML we expect!
+
+```html
+<div id="recoil-root">
+  <div>
+    <span>Hello</span>
+    <span>World</span>
+  </div>
+</div>
+```
+
+Now we're still miles away from React. But at least we are starting to explore the concepts of rendering and component children.
+
+The next post will include support for both HTML and non HTML components and add support for props.

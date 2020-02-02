@@ -3,5 +3,8 @@ export default {
     ol: {
       marginLeft: "2rem",
     },
+    ul: {
+      marginLeft: "2rem",
+    },
   },
 }
