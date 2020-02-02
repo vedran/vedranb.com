@@ -68,7 +68,7 @@ function SEO({ description, lang, meta, title, location, featuredImage }) {
           content: metaDescription,
         },
         {
-          name: `twitter:image`,
+          name: `og:image`,
           content: featuredImage ? `${location.origin}${featuredImage}` : null,
         },
       ].concat(meta)}
