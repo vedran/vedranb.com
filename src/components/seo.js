@@ -52,6 +52,10 @@ function SEO({ description, lang, meta, title, location, featuredImage }) {
           content: `website`,
         },
         {
+          name: `og:image`,
+          content: featuredImage ? `${location.origin}${featuredImage}` : null,
+        },
+        {
           name: `twitter:card`,
           content: `summary`,
         },
@@ -68,7 +72,7 @@ function SEO({ description, lang, meta, title, location, featuredImage }) {
           content: metaDescription,
         },
         {
-          name: `og:image`,
+          name: `twitter:image`,
           content: featuredImage ? `${location.origin}${featuredImage}` : null,
         },
       ].concat(meta)}
