@@ -49,9 +49,7 @@ function createElement(elementType, props, render) {
 }
 ```
 
-To handle both custom components and regular HTML elements, I decided to go with the simple approach of treating regular HTML elements as custom components. In this way I would just create DivComponent, SpanComponent, etc. These components are responsible for creating these common elements.
-
-I believe that treating all elements as components will simplify the architecture. Time will tell!
+To handle both custom components and regular HTML elements, I decided to go with the simple approach of treating regular HTML elements as custom components. In this way I can just create `DivComponent`, `SpanComponent`, etc, to handle the common elements. I believe that treating all elements as components will simplify the architecture, but only time will tell.
 
 Let's start with a component for the `<div>` element:
 
