@@ -1,0 +1,110 @@
+---
+title: Adding custom components to recoil
+date: 2020-02-02
+description: "Continuing to learn about React by building it from scratch. Today we will add support for custom components"
+featuredImage: "/images/delete_small.png"
+---
+
+This is my second post in a series where I try to rebuild React from scratch in an effect to improve my understanding about it. As I mentioned before, thesaurus.com has named my library `recoil`.
+
+In the [last post](/blog/rm-rf-react/), we ended up with a simple function that could generate a string of HTML text for stock HTML elements like a `div`.
+
+The next step is to support custom components, one of React's main features. We need to go beyond the divs, spans, etc.
+
+We last ended off with an API like this:
+
+```javascript
+createElement(
+  "div",
+  {
+    children: [
+      createElement("span", { children: "Hello" }, renderHtmlComponent),
+      createElement("span", { children: "World" }, renderHtmlComponent),
+    ],
+  },
+  renderHtmlComponent
+)
+```
+
+and we defined `createElement` as:
+
+```javascript
+function createElement(elementType, props, render) {
+  let html = ""
+
+  // Create the opening tag
+  html += `<${elementType}>`
+
+  // Call render, which we expect to return an array of 0 or more children.
+  // By now, each child is just a string of HTML, since that's what createElement returns.
+  // All we need to do is join the resulting strings together to build up the entire app.
+  html += render(props).join("")
+
+  // Create the closing tag
+  // NOTE: We're assuming all elements have both opening and closing tags.
+  // This isn't always the case
+  html += `</${elementType}>`
+
+  return html
+}
+```
+
+To handle both custom components and regular HTML elements, I decided to go with the simple approach of treating regular HTML elements as custom components. In this way I would just create DivComponent, SpanComponent, etc. These components are responsible for creating these common elements.
+
+I believe that treating all elements as components will simplify the architecture. Time will tell!
+
+Let's start with a component for the `<div>` element:
+
+```javascript
+function DivComponent({ children, ...otherProps }) {
+  // Turn each child into a string of HTML
+  let processedChildren = (children || []).map(child =>
+    createElement(child, otherProps)
+  )
+
+  // Wrap the html string of the children in the div tags
+  return `<div>${processedChildren.join("\n")}</div>`
+}
+```
+
+Since `DivComponent` is creating the opening and closing tags, we can simplify our `createElement` call to just handle the string vs component case, and no longer worry about the `elementType`. We'll consider the first argument (`component`) to be either a function or a string.
+
+```javascript
+function createElement(component, props = {}) {
+  // String "component", so just return the string. Like a text node in HTML
+  if (typeof component === "string") {
+    return component
+  }
+
+  // 'render' the component
+  return component(props)
+}
+```
+
+So now we have a cleaner version of our code from last time, but we still don't have custom components. Let's build a custom component that takes a `name` prop and prints `Hello {name}`.
+
+```javascript
+const GreetingComponent = ({ name }) =>
+  createElement(DivComponent, {
+    children: [createElement(`Hello ${name}`)],
+  })
+
+// The JSX equivalent would be:
+<div>
+  hello {name}
+</div>
+```
+
+This code produces both the div and our custom component!
+
+```html
+<div id="recoil-root">
+  <div>Hello Jeff</div>
+</div>
+```
+
+And that's it! Now `recoil` supports classic elements like `<div>`, and custom components lke our `GreetingComponent`.
+
+As cool as that is, at this point we're still only rendering once. There's no data binding that causes elements to re-render. There's also no internal component state.
+
+In the next post, we'll dive into the `useState` React hook and how we can implement it in `recoil`.
