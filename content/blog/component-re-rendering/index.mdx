@@ -273,3 +273,21 @@ You can find all of the code for this iteration on [Github](https://github.com/v
 One of the major flaws in this iteration is that recoil still doesn't support the distinction between rendering and mounting. Every render is a remount/unmount of the underline DOM element, though the Wrapper still remembers the state.
 
 Next time we'll implement some basic [reconciliation](https://reactjs.org/docs/reconciliation.html), so that we don't automatically unmount and remount the changed DOM elements on every state change. That will allow us to start supporting things like `<input>` tags, and forms in general.
+
+<blockquote class="twitter-tweet">
+  <p lang="en" dir="ltr">
+    Continuing my deep dive into{" "}
+    <a href="https://twitter.com/hashtag/reactjs?src=hash&amp;ref_src=twsrc%5Etfw">
+      #reactjs
+    </a>{" "}
+    by building a React clone from scratch. This time I write about adding
+    support for rendering only components that have changed.
+    <a href="https://t.co/FU87fOdHVc">https://t.co/FU87fOdHVc</a>
+  </p>
+  &mdash; Vedran Budimcic (@vbudimcic) <a href="https://twitter.com/vbudimcic/status/1228446422434902017?ref_src=twsrc%5Etfw">February 14, 2020</a>
+</blockquote>
+<script
+  async
+  src="https://platform.twitter.com/widgets.js"
+  charset="utf-8"
+></script>
