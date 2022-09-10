@@ -30,20 +30,11 @@ class BlogPostTemplate extends React.Component {
               style={{
                 fontWeight: "600",
                 marginTop: rhythm(1),
-                marginBottom: 0,
+                marginBottom: rhythm(1),
               }}
             >
               {post.frontmatter.title}
             </h1>
-            <p
-              style={{
-                ...scale(-1 / 5),
-                display: `block`,
-                marginBottom: rhythm(1),
-              }}
-            >
-              {post.frontmatter.date}
-            </p>
           </header>
           <ThemeProvider theme={theme}>
             <MDXRenderer>{post.body}</MDXRenderer>

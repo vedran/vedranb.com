@@ -5,7 +5,7 @@ import Layout from "../components/layout"
 import SEO from "../components/seo"
 import { rhythm } from "../utils/typography"
 
-import  '../styles/global.scss';
+import "../styles/global.scss"
 
 class BlogIndex extends React.Component {
   render() {
@@ -30,7 +30,6 @@ class BlogIndex extends React.Component {
                     {title}
                   </Link>
                 </h2>
-                <small>{node.frontmatter.date}</small>
               </header>
               <section>
                 <p
@@ -56,7 +55,7 @@ export const pageQuery = graphql`
         title
       }
     }
-    allMdx(sort: { fields: [frontmatter___date], order: DESC }) {
+    allMdx(sort: { fields: [frontmatter___order], order: DESC }) {
       edges {
         node {
           excerpt
@@ -64,7 +63,7 @@ export const pageQuery = graphql`
             slug
           }
           frontmatter {
-            date(formatString: "MMMM DD, YYYY")
+            order
             title
             description
           }
