@@ -1,0 +1,503 @@
+---
+title: Building & monetizing a Miro app [TBD]
+date: 2020-03-12
+description: "TBD"
+order: 90
+---
+
+
+
+# Intro
+Over the past 4 years, I've built apps and integrations on Greenhouse, Figma & FigJam, and been lucky enough to get early access to new APIs on these platforms.
+
+In this time, I've had successes (acquisitions) and failures (spent months building feature-rich apps that didn't resonate with user after launching).
+
+I've learned a lot of things in this time.
+
+These days I'm focusing on building integrations for Miro. I'm very optimistic about Miro because blah blah 35 million blah blah, rapid growth, valuation, new platform released but blah bla early days of the iphone app store. I've noticed that some of my previous learnings are useful when launching a tool on Miro, and I've also learned a few tricks on creating a very fast development cycle for Miro apps. 
+
+
+My focus will be on building apps using the Miro Web SDK, but Miro also has a [REST API](https://developers.miro.com/reference/api-reference) and a [Live Embed](https://developers.miro.com/docs/miro-live-embed-introduction) option.
+
+This is focused on solo developers and small teams who can move fast.
+
+
+>>> WHY MIRO?
+## Why Miro
+New platform, huge potential market size.
+Imagine building iphone apps just as the app store 
+Fast development time. Local dev, can point to localhost without any proxies. Web based, no zipping and uploading content, it just works. Can re-use existing websites.
+Easy app review process
+Share URL to install apps without publishing
+
+
+Miro has as a [Community App Contest](https://developers.miro.com/page/announcing-our-community-apps-contest) on until October 14th 2022, so I wanted to share my learnings to help anyone else who is building on the platform.
+
+
+# Learning #1: Optimize for fast learning from real users
+
+You have an idea for an app that you want to build on a platform like Miro, and you believe it's going to be a big hit and used heavily by thousands or ten thousands of Miro users.
+
+To have a successful app on a platform like Miro, there are two major assumptions that need to be true:
+
+1. Users find your app extremely useful 
+2. Users are willing to pay for your app
+
+Until you have very strong user adoption (e.g. 10-100 very active users), your effort should be focused on things that will help you prove/disprove these two assumptions as quickly and directly as possible. Don't write code unless you have to. Writing code is usually the slowest way to test assumptions, and should only be done when there are no faster ways to continue testing assumptions.
+
+It is too easy to find false positive indications of success that will lead to overbuilding and focusing on the wrong things. Things like "My 5 friends say this is a great app idea!" or "I surveyed potential users and 60% said they would pay for this" will give you a false sense that your app is valuable and will delay you from launching and iterating with real users while you quietly focus on nice-to-haves like documentation, beautiful landing pages, and nice-to-have features.
+
+You want to find the shortest path possible to 
+There are great books like _The Lean Startup_ by Eric Ries that describe general principles for building products and companies in this way. I'm going to focus on how you can leverage the Miro platform ecosystem to test the assumptions of your app as fast as possible.
+
+## TODO: Introduce my code sample for MiroSDK Loader.
+MiroSDKLoader.. do I really need that unique ID? Isn't it in its own iframe? If not, then yes, so check that
+Routes, headless vs panel. Both need to load the SDK
+
+
+## Do you really need a custom website?
+
+Why products have websites?
+- Increase legitimacy
+- Brochure of features
+- Pricing options 
+- Documentation
+
+Miro has an app marketplace directory, and apps are only shown after going through a security and design review. Having a page on the app marketplace gives your app the legitimacy in a way that doesn't require you to spend days to build a custom website.
+
+For simple-to-moderate applications, especially those integrated on an existing platform, creating a lot of documentation should be a sign that your app has a bad user experience. The first version of your app that proves the value of your idea should be simple enough that it does not need documentation beyond the marketplace listing and the occasional tooltip.
+
+If you are building an app that works alongside a Miro board using the Miro SDK, you can add your feature list and pricing options in a page within that app itself. This helps you build things much faster, because Miro app panels are fixed width and have a fixed height that you can control, which makes it very easy to design simple features and pricing pages that fit into that space.
+
+It can take _days_ to build even a simple website, and it doesn't get you , because it's not just matter of writing code. You need to come up with a design, make changes, make it mobile. And none of that work gets you closer to actually testing the real assumptions about your apps features.
+
+I didn't build a website for my [Easy Translator app for Miro](https://miro.com/marketplace/easy-translator/)
+
+If you do need to build a website (e.g. your app isn't used alongside a Miro board), then remember that all of your users will come _from_ Miro and already have some context into what your app is supposed to do. Use that to your advantage to build a functional website that looks more like an admin panel than a polished marketing tool.
+
+## Do you really need a backend?
+
+If you are building an app that runs inside Miro using their [Web SDK](https://developers.miro.com/docs/miro-web-sdk-introduction), challenge yourself to think if you actually need to build a backend system.
+
+Do you just need to store some simple data without the need for strict security?
+
+Save your app data onto the board with Miro SDK's [setAppData](https://developers.miro.com/docs/board_board#setappdata and [getAppData](https://developers.miro.com/docs/board_board#getappdata) functions.
+
+Or consider using [App Cards](https://developers.miro.com/docs/appcard_appcard-1).
+
+The main reason that developers reach for a backend is to secure credentials for users, APIs, databases, etc. If you're sure that you have sensitive data you want to save, or your app absolutely needs to save content into a database, or requires connecting to APIs with secure tokens, then definitely create a backend. Don't compromise security. In these cases, build the simplest backend possible with the technology you are familiar with and you know moves fast.
+
+Do not build a system that can scale. Embrace tech debt. Most apps fail because they didn't find a big enough population of users that resonated with the problem they solved.
+
+Instead of a fully replicated AWS deployment, can you get away with something simpler like the serverless functions offerings from [Netlify](https://www.netlify.com/) or a [Digital Ocean](https://m.do.co/c/6fe0a1d89570
+
+
+## Do you really need authentication?
+
+An app need authentication to identify the current user.
+
+There are many reason you may need to identify users (store preferences, show user-specific content, connect subscriptions to the users).
+
+Make sure that the very first version of your app absolute needs to identify users for a good reason before taking the time to build authentication. 
+
+Typically, implementing authentication also requires a backend.
+
+Okay, so you're sure you need a backend and authentication. Typically that means you need to support:
+- Signing in
+- Signing out
+- Signing up
+- Authenticating with username and password, a magic link, or something like "Sign in with Google"
+- Forgot my password flows
+- Database to store the user's details and their session
+
+Let's skip ALL of that and just use the JWT-based authentication system built right into the Miro Web SDK with the [board.getIdToken()](https://developers.miro.com/docs/board_board#getidtoken) function. 
+
+How does it work?
+Miro will generate a secure token that represents the current user's session, and you can send it to your backend with every API request. Miro created the token using your app's client secret, which your backend can use to verify the identify of the user.
+
+No need for you to build login screens, signup flows, forgot my password options, magic links, sign in with Google, etc. You don't even need a database. Every user of your app is automatically signed in, and all of the messy parts are handled by Miro.
+
+This token provide a unique identifier for the Miro user and another identifier for their team.
+
+Here's a simplified example of how it could work Typescript for a Miro Web SDK app:
+
+TODO: FORMAT THIS BETTER AND TEST IT
+
+```jsx
+export const fetchAPI = async (endpoint: string, params: any) => {
+  const miroToken:string = await window.miro.board.getIdToken()
+  const resp = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...params,
+    headers: {
+        authorization: `Bearer ${miroToken}`,
+    }
+  }
+
+  if (!resp.ok) {
+    throw new APIError(resp)
+  }
+
+  return resp
+}
+
+```
+
+And some sample python code that a Django backend can use to verify the token using the popular [PyJWT](https://pypi.org/project/PyJWT/) library for python.
+
+
+
+```py
+# ...
+
+AUTH_ERROR = "Authentication failed"
+
+auth_header = request.META.get('HTTP_AUTHORIZATION')
+if not auth_header:
+    raise Exception(AUTH_ERROR)
+
+# Extract the token from the authorization header, which is in the format "Bearer <token>".
+auth_split = auth_header.split(' ')
+if len(auth_split) != 2:
+    raise Exception(AUTH_ERROR)
+
+# Use the JWT library to simultaneously decode and verify the token was signed with your app secret
+auth_data = jwt.decode(auth_split[1], key=settings.MIRO_CLIENT_SECRET, algorithms=["HS256"])
+if auth_data['iss'] != 'miro': 
+    raise Exception(AUTH_ERROR)
+
+miro_user_id = auth_data['user']:
+if not miro_user_id:
+    raise Exception(AUTH_ERROR)
+
+# You are authenticated!
+# ...
+```
+
+## Do you really need to re-invent the wheel for UI and design?
+
+Use Mirotone. 
+https://www.mirotone.xyz/css
+
+
+## Do you really need a billing system?
+
+To monetize an app, you need some way to collect money from your users.
+
+But remember that users first need to find your app extremely useful for the app to be successful. 
+
+Depending on the billing model that you've thought about for your app
+
+Personally, when I launch a new app on an existing platform, I always include a free trial period, and I avoid requiring sign up if possible. I do this for a few reasons:
+
+1. For a popular app I worked on with almost 20,000 installs, 52% of users who opened the app did not proceed past the sign-up screen.
+
+2. You don't need to build a billing system until your first active user has reached the end of their trial. If you have a 14 day trial, that gives you at least two weeks before you actually need to consider building the billing system, and you always have the option to continue extending trials of active users who reach the end. It's a perfect excuse for you to engage with your users and learn why they are using your app, and it will also make them happy. 
+
+## Do you really need a comprehensive billing system?
+
+Building a billing system is not easy. Users need to be able to make purchases, change and cancel plans, use promo codes, enter payment method details, etc.
+
+I recommend that you break these requirements up, and develop them only when you absolutely need to.
+
+Like I stated before, if you don't have any active users, you don't need to build a billing system. Create a 7 day trial and then focus on getting active users and understanding why they are active.
+
+When it's time to plug-in in a payment system, you don't need to build a comprehensive system on day one. There are many options:
+
+For new purchases you can generate [Stripe Payment Links](https://stripe.com/en-ca/payments/payment-links) to allow your users to make one-time or recurring payments without writing any subscription management code. Put these links into your app, and add the url parameter `client_reference_id=<MIRO USER ID>` in the URL to identify which Miro user made the purchase. Then you can manually update your database to mark the user as a paid subscriber, or use Stripe webhooks that will send you a `checkout.session.completed` event after a successful purchase, where you can use the `client_reference_id` to identify the user and update their subscription automatically.
+
+There are other options like Stripe's no-code [Customer Portal](https://stripe.com/docs/billing/subscriptions/integrating-customer-portal), or even [Gumroad](https://gumroad.com/).
+
+Consider the number of active users you have, and whether you really need a full-blown automated billing system in order to launch your app.
+
+For cancellations and plan changes, you can also do it completely via email to begin, or build a very simple page in your app that just sends you an email, and you can make the changes manually in Stripe.
+
+I don't recommend you invest in building a fully automated self-serve billing system until you've reached a scale that you can't support all of the incoming requests.
+
+
+## Do you really need that feature?
+
+
+# Learning #2: Deeply understand the technology and business goals of the platform you're building
+
+
+Understand limitations 
+* [Unsupported items](https://developers.miro.com/docs/unsupported_unsupported-1)
+
+
+Learn about the company priorities and challenges
+What is the growth of the platform?
+Understand market size
+Find roadmaps
+Find user pain points
+Connect with team members from the company
+Understand how users use the tools and what their pain points are
+Become a power user of the app yourself
+
+
+Deeply  Maybe deeply learning / knowing the platform and its users?
+
+Seems obvious, but really know the platform, blah blah.
+
+Specific action items in Miro
+* Join the discord to learn 
+* Follow the company leadership and key platform teams on linkedin
+    * [Anthony Roux, Developer Relations Lead](https://www.linkedin.com/in/anthonyrouxfr/)
+    * [Thor Mitchell, Head of Product, Developer Platform](https://www.linkedin.com/in/thormitchell/)
+    * 
+* Browse the community 
+* Find their 
+* Look at all of the code samples
+* Trends: https://miro.com/blog/collaboration-trends/
+
+
+# Learning #3: Build relationships
+
+The success of platforms for companies like Miro, Figma, etc depend on a healthy ecosystem of developers building solutions that don't make sense for the companies to build themselves. 
+
+These companies want their platforms to succeed, and they need developers like you to help by building awesome apps to solve specific use cases that can't generalize to all other users. 
+
+Join the discord, reach out to the teams that run and lead the platforms. Try to enroll in any early beta platform features. Not only will you have the advantage of building on these new features before anyone else, but they also give you an insight into the direction the company and platform are heading.
+
+Building apps on these platforms is not a one way street f value. The platform is benefiting from you. These companies are eager to help developers with their platform, and have resources from cash investments and affiliate programs to marketing support and general advice. Companies like Miro are the best funded/have the best team/etc, and bla blah
+
+Ask them for help, they want to support you too and they have huge amount of resources. Some companies like Coda has a [$1 million Maker Fund](https://coda.io/maker-fund), Zoom has Companies like Coda
+
+
+In 2018, I built [willowy](https://willowy.co/), a Greenhouse integration that helps automate take-home interviews for job candidates. It was acquired in 2019 and the biggest thing that led to that was becoming a "Greenhouse official partner", which put the willowy app and logo in Greenhouse's integrations page, right beside logos like Google, Dropbox, and Calendly, and brought dozens of eager enterprise leads my way with no marketing dollars spent. One of those leads ended up acquiring willowy.
+
+
+
+
+* Miro contest
+* Miro discor
+* Miro commiunity forum thing
+* Anything else?
+
+
+
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+
+
+The biggest assumption to test is "People will find, install, and pay for my app".
+
+Although there are many assumptions related to the product and business model, I'm going to focus on assumptions that developers often hold when building new apps that are often untrue
+
+Assumptions that developers often hold that prevent them from building or launching apps on platforms like Miro:
+
+### 1. My app needs a dedicated website
+
+Why? 
+- Increase legitimacy
+- Convince people to sign up
+- Documentation
+
+
+Many things people hold as assumptions that aren't true at all
+
+Write only as much code as you need to prove or disprove your riskiest assumptions
+
+
+Every step of the way, you should think, "Does doing this bring me closer to understanding whether my app is useful?"
+
+What is the minimum viable product that I can launch 
+
+### 1. My app needs a dedicated website
+
+Main purposes of a website:
+- Documentation for your product
+- People can discover your app organically
+- Legitimacy
+
+It can take _days_ to build even a simple website, and it doesn't get you , because it's not just matter of writing code. You need to come up with a design, make changes, make it mobile. And none of that work gets you closer to actually testing the real assumptions about your apps features.
+
+Before you take the time to buy a new domain and create a website 
+
+* Make a [Loom video](https://www.loom.com/)
+
+Why is this false? Platforms always have a space for integrations to include their name, logo, features, selling points, etc. 
+
+
+### 2. My app needs authentication
+
+
+
+
+### 3. My app needs email/password/Sign in with Google authentication
+
+Remember that the biggest benefit of building an app on an existing platform is that you benefit from the giant network of users who already use that platform. Miro has over 35,000,000 monthly active users. 
+
+Here are some specific assumptions to ask yourself, and my recommendations for how to test them as fast as possible in Miro. 
+
+When you build any kind of product
+You should assume that whatever you build initially is not exactly what users want. 
+Your north star to answer most questions.
+Which technology should I use?
+Do I need to build a backend?
+Most decisions are reversible. 
+
+
+The top places that time is wasted:
+* Debating what technology stack to use
+* Building authentication system
+* Building a fancy website
+* Agonizing over copywriting
+* Overthinking pricing
+
+
+Specific action items:
+
+
+* Use the [Mirotone CSS library] https://www.mirotone.xyz/css
+* Use [board.getIdToken()](https://developers.miro.com/docs/board_board#getidtoken) 
+* Do you actually need a domain name?
+* Do you really need a backend, if so then follow [this guide](https://developers.miro.com/docs/enable_api_authentication_from_sdk_authorization)
+* Miro security review 
+    * HSTS
+    * Digital ocean app platform doesn't force TLS 1.2 or higher, so that can't pass miro security review
+    * https://developers.miro.com/docs/security-guidelines
+
+
+
+
+
+
+Important skills when building integrations:
+
+1. Understanding the shared fundamentals of building on platforms. Things like Authentication, Webhooks, local proxies, 
+2. Being able to deeply understand the concepts and limitations of the platforms you're working with
+3. Understanding the expected workflows and "culture" of the users who use this tool. What do they like, how do they expect things to work, what kinds of problems are they trying to solve
+
+
+
+Target audience:
+
+Principles:
+* Optimize for fast learning
+* Lean into the strengths of the platform
+*
+
+
+## Deciding what to build
+Think about market size, think about time to launch and iterate. Is it a problem you need solved yourself. Think about market size, think about time to launch and iterate. Is it a problem you need solved yourself. Think about market size, think about time to launch and iterate. Is it a problem you need solved yourself. Think about market size, think about time to launch and iterate. Is it a problem you need solved yourself.
+Commmunity app contest
+https://developers.miro.com/page/announcing-our-community-apps-contest
+
+Best is to solve a problem that you have faced yourself, and that you also know how to find others who have faced it.
+
+
+## How to build
+
+Principles:
+
+Test the concept before investing in the technology. Software is easy in that it doesn't need any raw materials. It feels very fast. You can make this change here, add a new quick feature there, and it doesn't feel like it takes a lot of time to build what you think is the MVP of your app. Those "quick features" add up, and before you know it, you've spent a month building a very fancy version of an app that could have been launched in a week. 
+
+Think about it another way, would you rather spend 2 weeks building features alone, or would you rather have 2 weeks of learnings from real users. You don't have "one shot" with these kinds of apps. Miro has 35,000,000+ monthly active users.
+
+
+Learn from your users
+
+Engage with your potential and active users. As engineers we tend to prefer working with code than working with people, and we're often allergic to anything that sounds like sales.
+
+Building is the slowest way to learn something. Talking to experts, tlaking to users, etc, is faster. Look for shortcuts everywhere
+
+Share URL links with Miro
+Miro community
+Analytics
+
+Don't be optimistic. People tend to assume what they're building is going to succee and be useful to users, so they overbuild that extra feature and prepare for extra scale. Don't do that. You should under-build anything you can, assume that it will fail, and keep a plan in mind for what you will do if it succeeds. Do you really need to build this now?
+
+For example, if you have a product and you think that a monthly subscription fee fits your user type, and you want to have a free trial, then don't build a payment and subscription system until you actually need it. You have a 14 day window from when the first customer signs up until you actually need to support them to check out
+
+Will your app have a 7 day free trial? Maybe you can launch without even implementing payment. You have a 7 day window after you get your first active users to implement payment. And worst case scenario, you can extend the user's trial if it takes you longer than that. They'll be happy, and you might also be able to talk to them about pricing directly and found out what numbers make sense to them.
+
+
+Make compromises to keep things simple. Don't use a custom Stripe backend, use Stripe payment links
+How to use stripe payment links?
+- Add the user's ID in the client_reference_id for the payment link
+
+If you end up building something that is actually useful, you will be surprised by the way your users use your product and what features they ask for. The worst thing that can happen would be that a feature you built for a hypothetical use case makes it difficult to add the real use case your customers actually want.
+
+Often times the things that take the most time are actually things you don't need to do at all. Don't spend your time painfully deciding between which hero image to put on your fancy landing page, and agonizing over the above-the-fold of a website. Can you skip the website entirely?
+
+
+Actionable advice:
+- Use [board.getIdToken()](https://developers.miro.com/docs/board_board#getidtoken) 
+- Do you actually need a domain name?
+- Use Mirotone heavily
+
+
+
+
+
+Use Mirotone heavily
+
+
+Keep your costs low. That doesn't mean to avoid paying for things that will give you a lot of value. But don't start unnecessarily spinning up expensive dedicated server architectures before you've had your first customer
+Do you really need a backend?
+React template
+Deployment
+Hosting digital ocean referral link https://m.do.co/c/6fe0a1d89570
+getIdToken for authentication
+You could just do a cloud function with no database. You just need somewhere to safely store your
+
+## Sharing code samples
+MiroSDKLoader.. do I really need that unique ID? Isn't it in its own iframe? If not, then yes, so check that
+Routes, headless vs panel. Both need to load the SDK
+
+
+# Analytics
+#
+
+
+# Monetizing
+
+How to price? Who is your target audience? Are you sure what you are building is worth charging for?
+If it's not worth charging for but you know there is very strong demand, it can still be worth building. Gets you connected to users who may be customers of other things eventually. It is much much easier to make a business around something that already has adoption and growth, because you can only run learn and experiments when there are actually people using your product.
+
+
+Requirements to monetize:
+- You have to be able to identify the user and know whether the
+- You have to be able to identify the user
+
+
+1. getIdToken for authentication
+
+
+do things that don't scale? Reach out to peopl
+
+
+# Sell your app
+
+Building the app is not enough. It is actually the easy part. Now you need to talk to those people who you identified as possible users and see .
+
+Prove the concept before overinvesting in technology
+
+What is the quickest way to prove that your idea is valuable?
+
+Community board?
+
+
+# Challenges
+* Don't have full control over experience
+The challenges with building on other platforms:
+
+---
+
+
+The stages of launching a new product
+
+
+
