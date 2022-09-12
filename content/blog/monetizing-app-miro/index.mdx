@@ -1,0 +1,240 @@
+---
+title: Building & monetizing a Miro app with the web SDK
+date: 2022-09-12
+description: "TBD"
+order: 90
+draft: true
+---
+
+
+Over the past 4 years, I've built over a dozen apps/integrations for platforms like Greenhouse, Figma, FigJam, Coda, Zoom, Slack, and Miro. Some of these were complete flops that did not resonate with users after months of building, while others had steady user growth and led to successful acquisitions. Most recently, I built the [Easy Translator](https://miro.com/marketplace/easy-translator/) plugin for Miro.
+
+Since Miro is running a [Community App Contest](https://developers.miro.com/page/announcing-our-community-apps-contest) until October 14th to encourage developers to build on [their new platform](https://miro.com/blog/developer-platform-beta/). I wanted to share the things I've learned to help anyone else participating in the contest to build apps for Miro's 35+ million monthly active users.
+
+For this post, I will focus on my tips for how to leverage the [Miro Web SDK](https://developers.miro.com/docs/miro-web-sdk-introduction) to build and validate app ideas as fast as possible, but Miro also has a [REST API](https://developers.miro.com/reference/api-reference) and [Live Embeds](https://developers.miro.com/docs/miro-live-embed-introduction) that are work checking out too.
+
+## Basic principles
+
+For your app to be successful, two major assumptions need to be true:
+
+1. Users find your app extremely useful 
+2. Users are willing to pay for your app
+
+Until you have signals of strong user adoption (e.g. 10+ regular very active users), you should focus your effort on proving/disproving these assumptions based on real user engagement as quickly as possible. Remember that writing code is actually the slowest way to test assumptions. It's much faster to learn by talking to experts in the Miro community, or engaging with users directly.
+
+But eventually, it will be time to actually build your app. I hope the recommendations in this article will help you launch Miro apps as fast as possible. Please make sure you've read the [Miro Web SDK hello world example](https://developers.miro.com/docs/build-your-first-hello-world-app) and that you understand [how the Miro Web SDK works](https://developers.miro.com/docs/app-panels-and-modals).
+
+## Start with a simple template
+
+I build my Miro apps with React and Typescript, and I've created a basic template that I re-use for each new app. I start with the [Create React App template](https://reactjs.org/docs/create-a-new-react-app.html#create-react-app).
+
+
+```
+npx create-react-app my-app-name --template typescript
+```
+
+
+Then I modify `public/index.html` to include the Miro Web SDK script:
+
+```html
+// public/index.index.html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    [...]
+    <script src="https://miro.com/app/static/sdk/v2/miro.js"></script> //highlight-line
+
+    <title>Your app title</title>
+  </head>
+  <body>
+    [...]
+  </body>
+</html>
+```
+
+Then I add a routing system using [React Router](https://reactrouter.com/en/main) so that I can cleanly separate the code that runs in the [headless iframe](https://developers.miro.com/docs/app-panels-and-modals) to initialize the app from the code that powers the user-visible panel.
+
+```jsx
+// src/index.js
+import { BrowserRouter, Routes, Route } from "react-router-dom"
+import * as ReactDOM from "react-dom"
+import Panel from "./Panel"
+import Headless from "./Headless"
+
+const App = () => (
+  <div>
+    <Routes>
+      <Route path="/headless/*" element={<Headless />} />
+      <Route path="/panel/*" element={<Panel />} />
+    </Routes>
+  </div>
+)
+
+ReactDOM.render(
+  <BrowserRouter>
+    <App />
+  </BrowserRouter>,
+  document.getElementById("root")
+)
+```
+
+```jsx
+// src/Headless.tsx
+import { useEffect } from "react"
+
+const Headless = () => {
+  useEffect(() => {
+    window.miro.board.ui.on("icon:click", async () => {
+      await window.miro.board.ui.openPanel({
+        url: `/panel`,
+        height: 600,
+      })
+    })
+  }, [])
+
+  return null
+}
+
+export default Headless
+```
+
+```jsx src/Panel.tsx
+const Panel = () => <div>Hello!</div>
+
+export default Panel
+```
+
+If you use this approach, you will have a simple Miro Web SDK app with an icon in the sidebar that will open a panel that says "Hello!" when clicked. You may need to look under "More tools" to find your app.
+
+
+![My New App](images/my_new_app.png)
+
+
+## Share your app with potential users as soon as possible
+
+Many platforms require you to publish apps, share code directly, or restrict unpublished app sharing to your team only.
+
+Miro allows you to share your unpublished app with _any_ Miro user. Find your [App Settings](https://miro.com/app/settings/user-profile/apps
+) and scroll down to the Share app section to copy a shareable link.
+
+![Sharing app link](images/share_link.png)
+
+Share this link to people you consider early adopters who will give direct and honest feedback to improve your app.
+
+Note: Before sharing the link, make sure your app is deployed to a domain that other users can access. If your app is only running on localhost, you can use a tool like [ngrok](https://ngrok.com/) to generate a publicly accessible URL that serves your locally running app. Be sure to update your App URL to point to this domain as well.
+
+## Don't build a backend unless you need it
+
+A Miro Web SDK app is just an iframed webpage that uses an SDK to communicate with the current Miro board. This means you can you can serve a Miro app from any of the popular platforms for hosting static sites. I use [Netlify](https://www.netlify.com) to deploy the frontend of my apps because it is free and provides a publicly accessible URL I can use to host my Miro app directly. Netlify hosting also satisfies the TLS and HSTS requirements from [Miro's App security guidelines](https://developers.miro.com/docs/security-guidelines) out of the box.
+
+Challenge yourself to think about whether you can launch the first version of your app without a backend.
+
+Typically you'll need a backend to store data permanently or to restrict access to sensitive content like user data, API credentials, databases, etc. If your app doesn't have these requirements, but still needs to store some data, consider using Miro Web SDK functions like [setAppData](https://developers.miro.com/docs/board_board#setappdata) and [getAppData](https://developers.miro.com/docs/board_board#getappdata) to save data into the board directly. You can also use [App Cards](https://developers.miro.com/docs/appcard_appcard-1) to store information, or even your browser [localStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage), depending on your use case.
+
+If you _do_ need a backend, don't start with a complex, "scale-ready"  architecture. Embrace tech debt (for now) and use technologies you're comfortable with. Personally I use [Digital Ocean](https://m.do.co/c/6fe0a1d89570)'s App Platform because I find it simpler to manage than AWS, but I've also heard good things about [Netlify](https://www.netlify.com/products/functions/).
+
+
+## Use the Miro Web SDK built-in authentication
+
+If your app needs authentication, typically that means you need to support:
+- Signing in
+- Signing out
+- Signing up
+- The app experience for both signed in and non-signed-in users
+- Authenticating with username and password, a magic link, or something like "Sign in with Google"
+- Forgot my password flows
+- Database to store the user's details and their session
+
+Did you know that you can skip all of that by using the JWT-based authentication system built right into the Miro Web SDK? Check out the [board.getIdToken()](https://developers.miro.com/docs/board_board#getidtoken) function which will generate a secure token that represents the current user's session. You can send this token to your backend with every API request and use app's [client secret](https://developers.miro.com/docs/build-your-first-hello-world-app#step-4-configure-your-app-in-miro) to verify the request.
+
+Here's a Typescript example for making authenticate requests using `miro.board.getIdToken()`:
+
+```jsx
+// A helper function to make authenticated requests to your backend endpoints
+export const fetchAPI = async (endpoint: string, params: any) => {
+  const miroToken:string = await window.miro.board.getIdToken()
+  const resp = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...params,
+    headers: {
+        authorization: `Bearer ${miroToken}`,
+    }
+  }
+
+  if (!resp.ok) {
+    throw new APIError(resp)
+  }
+
+  return resp
+}
+
+```
+
+Here's a sample backend python function that uses the popular [PyJWT](https://pypi.org/project/PyJWT/) library to validate the authenticated request and returns the Miro user ID.
+
+
+```py
+from django.conf import settings
+import jwt
+
+def get_authenticated_miro_id(request):
+    AUTH_ERROR = 'Authentication failed'
+
+    auth_header = request.META.get('HTTP_AUTHORIZATION')
+    if not auth_header:
+        raise Exception(AUTH_ERROR)
+
+    # Extract the token from the authorization header, which is in the format "Bearer <token>".
+    auth_split = auth_header.split(' ')
+    if len(auth_split) != 2:
+        raise Exception(AUTH_ERROR)
+
+    # Use the JWT library to simultaneously decode and verify the token was signed with your app secret
+    auth_data = jwt.decode(auth_split[1], key=settings.MIRO_CLIENT_SECRET, algorithms=['HS256'])
+    if auth_data['iss'] != 'miro': 
+        raise Exception(AUTH_ERROR)
+
+    miro_user_id = auth_data['user']:
+    if not miro_user_id:
+        raise Exception(AUTH_ERROR)
+    
+    return miro_user_id
+```
+
+
+## Maintain a functioning local development environment
+
+As you begin iterating on your app with real user feedback, you'll find it helpful to maintain a local development environment that allows you to test bug fixes and build new features without affecting the live user-facing version of the app.
+
+To do this, I recommend you create two versions of your app in Miro. One always pointing at your local environment, and one pointing to the production URL.
+
+![Local app build](images/local_build.png)
+
+![Local app build text](images/local_build_app_url.png)
+
+## Use Miro's rich CSS library
+
+The [Mirotone](https://www.mirotone.xyz/css) CSS library has been invaluable in quickly building components that meet [Miro's design guidelines]. Even though there is no native React support, it works perfectly and has allowed me to use tabs, buttons, forms, icons and more, and build apps much faster than my previous experiences using another UI framework for Raect, called Material UI.
+
+## Avoid a billing system until you need it
+
+Building a billing system is not easy. Users need to be able to make purchases, change and cancel plans, use promo codes, and enter payment method details,
+
+I recommend that you break down each billing requirement into individual pieces, and build them one-by-one, only as they are needed. For example, if your app includes a 7 day trial, then don't need to truly support billing for at least 7 days. Take this time to talk to your users instead and learn how they found your plugin and what they were expecting.
+
+Consider the number of active users you have and whether you really need a full-blown automated billing system in order to launch your app. For cancellations and plan changes, you may be able to support these requests with a simple cancellation / plan change page that emails you when a user modifies their plan, and you can make the changes manually on Stripe.
+
+To support user app purchases, I'm a fan of the Stripe ecosystem and they offer a few no-code/low-code options to support users to purchase your products.
+
+* [Stripe Payment Links](https://stripe.com/en-ca/payments/payment-links) are no-code direct checkout links to specific products. Hosted on Stripe
+* [Stripe Checkout](https://stripe.com/docs/payments/checkout) low-code checkout flow that integrates into your existing site
+* [Stripe Customer Portal](https://stripe.com/docs/billing/subscriptions/integrating-customer-portal) is a full subscription management service
+
+If you're using Stripe Payment Links or Stripe Checkout, make sure to add `client_reference_id=<MIRO USER ID>` to the URL parameters, which will connect the checkout transaction to the Miro user.
+
+## Want to learn more tips for building on platforms like Miro?
+
+Enter your email here to be notified when I publish a new post
+
+[[[ Placeholder Input for subscribing to newsletters ]]]]
+
+Coming soon - Learning #2: Maximizing impact by leveraging the strengths of a major platform
