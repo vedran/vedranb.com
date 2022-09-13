@@ -27,7 +27,7 @@ const Header = ({ isRootPage }) => {
 
   const { author, social } = data.site.siteMetadata
   return (
-    <nav style={{ display: 'flex', alignItems: 'center', height: 50 }}>
+    <nav style={{ display: "flex", alignItems: "center", height: 50 }}>
       <Link
         style={{
           boxShadow: `none`,
@@ -35,7 +35,8 @@ const Header = ({ isRootPage }) => {
           color: `inherit`,
           display: `inherit`,
         }}
-        to={"/"}>
+        to={"/"}
+      >
         <Image
           fixed={data.avatar.childImageSharp.fixed}
           alt={author}
@@ -50,11 +51,11 @@ const Header = ({ isRootPage }) => {
           }}
         />
         <div>
-          <div style={{ fontSize: 20, fontWeight: 500, lineHeight: '25px' }}>
+          <div style={{ fontSize: 20, fontWeight: 500, lineHeight: "25px" }}>
             {author}
           </div>
-          <div style={{ fontSize: 14, lineHeight: '25px', color: 'grey' }}>
-            Personal blog
+          <div style={{ fontSize: 14, lineHeight: "25px", color: "grey" }}>
+            Thoughts & projects
           </div>
         </div>
       </Link>

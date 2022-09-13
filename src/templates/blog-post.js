@@ -1,20 +1,24 @@
 import React from "react"
 import { Link, graphql } from "gatsby"
 import { MDXRenderer } from "gatsby-plugin-mdx"
+import { MDXProvider } from "@mdx-js/react"
 import { ThemeProvider } from "theme-ui"
 import theme from "./theme"
 
 import Layout from "../components/layout"
 import SEO from "../components/seo"
 import { rhythm, scale } from "../utils/typography"
+import Form from "../components/form"
+
+const shortcodes = {
+  Form,
+}
 
 class BlogPostTemplate extends React.Component {
   render() {
     const post = this.props.data.mdx
     const siteTitle = this.props.data.site.siteMetadata.title
     const { previous, next } = this.props.pageContext
-
-    console.log(this.props.location)
 
     return (
       <Layout location={this.props.location} title={siteTitle}>
@@ -37,7 +41,9 @@ class BlogPostTemplate extends React.Component {
             </h1>
           </header>
           <ThemeProvider theme={theme}>
-            <MDXRenderer>{post.body}</MDXRenderer>
+            <MDXProvider components={shortcodes}>
+              <MDXRenderer>{post.body}</MDXRenderer>
+            </MDXProvider>
           </ThemeProvider>
           <footer></footer>
         </article>

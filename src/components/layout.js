@@ -37,7 +37,7 @@ const Layout = ({ location, title, children }) => {
       </header>
       <main>{children}</main>
       <footer style={{ display: "flex", justifyContent: "flex-end" }}>
-        <a href="/blog/past-projects">projects</a>
+        <a href="https://www.linkedin.com/in/vedran-budimcic/">linkedin</a>
         <div
           style={{ display: "inline-block", width: 20, textAlign: "center" }}
         >

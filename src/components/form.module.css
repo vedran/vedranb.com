@@ -1,0 +1,26 @@
+.formWrapper * {
+  font-family: Arial;
+}
+
+.formWrapper input[type="email"] {
+  margin-right: 8px;
+  font-size: 14px;
+  padding: 2px 8px;
+}
+
+.formWrapper input[type="submit"] {
+  font-size: 14px;
+  padding: 4px 16px;
+  background: rgba(104, 129, 255, 1);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.formWrapper input[type="submit"]:hover {
+  color: rgba(66, 98, 255, 1);
+}
+
+.message {
+}
