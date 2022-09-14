@@ -224,7 +224,7 @@ If you're using Stripe Payment Links or Stripe Checkout, make sure to set a `cli
 Here's a Django example of how you can implement a webhook endpoint that will receive the `checkout.session.completed` event from Stripe when a user has completed a purchase using Stripe Payment Links or Stripe Checkout:
 
 
-```
+```python
 class StripeWebhookView(GenericAPIView):
     permission_classes = [AllowAny]
 
