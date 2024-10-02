@@ -7,7 +7,7 @@ import { rhythm } from "../utils/typography"
 const Header = ({ isRootPage }) => {
   const data = useStaticQuery(graphql`
     query HeaderQuery {
-      avatar: file(absolutePath: { regex: "/profile-pic.jpg/" }) {
+      avatar: file(absolutePath: { regex: "/me.png/" }) {
         childImageSharp {
           fixed(width: 50, height: 50) {
             ...GatsbyImageSharpFixed
